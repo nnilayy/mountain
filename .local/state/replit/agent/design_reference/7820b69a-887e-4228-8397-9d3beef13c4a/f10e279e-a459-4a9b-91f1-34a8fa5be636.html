@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Outreach & Tracking Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: 'hsl(var(--border))',
+                        input: 'hsl(var(--input))',
+                        ring: 'hsl(var(--ring))',
+                        background: 'hsl(var(--background))',
+                        foreground: 'hsl(var(--foreground))',
+                        primary: {
+                            DEFAULT: 'hsl(var(--primary))',
+                            foreground: 'hsl(var(--primary-foreground))',
+                        },
+                        secondary: {
+                            DEFAULT: 'hsl(var(--secondary))',
+                            foreground: 'hsl(var(--secondary-foreground))',
+                        },
+                        muted: {
+                            DEFAULT: 'hsl(var(--muted))',
+                            foreground: 'hsl(var(--muted-foreground))',
+                        },
+                        accent: {
+                            DEFAULT: 'hsl(var(--accent))',
+                            foreground: 'hsl(var(--accent-foreground))',
+                        },
+                        destructive: {
+                            DEFAULT: 'hsl(var(--destructive))',
+                            foreground: 'hsl(var(--destructive-foreground))',
+                        },
+                        card: {
+                            DEFAULT: 'hsl(var(--card))',
+                            foreground: 'hsl(var(--card-foreground))',
+                        },
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 222.2 47.4% 11.2%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 222.2 84% 4.9%;
+        }
+
+        .dark {
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 210 40% 98%;
+            --primary-foreground: 222.2 47.4% 11.2%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 212.7 26.8% 83.9%;
+        }
+
+        * {
+            border-color: hsl(var(--border));
+        }
+
+        body {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+        }
+
+        .sidebar-collapsed {
+            width: 4rem;
+        }
+
+        .sidebar-expanded {
+            width: 16rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-expanded, .sidebar-collapsed {
+                width: 100%;
+                position: fixed;
+                z-index: 50;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background">
+    <!-- @COMPONENT: AppShell [Main layout container] -->
+    <div class="flex h-screen bg-background">
+        <!-- @COMPONENT: Sidebar [Navigation sidebar] -->
+        <div id="sidebar" class="sidebar-expanded bg-card border-r border-border transition-all duration-300 flex flex-col">
+            <!-- Sidebar Header -->
+            <div class="flex items-center justify-between p-4 border-b border-border">
+                <div class="flex items-center space-x-2" id="logo-text">
+                    <div class="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+                        <i data-lucide="target" class="w-5 h-5 text-primary-foreground"></i>
+                    </div>
+                    <span class="font-semibold text-foreground">OutreachPro</span>
+                </div>
+                <button id="sidebar-toggle" class="p-2 rounded-md hover:bg-accent">
+                    <i data-lucide="panel-left" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-2">
+                <div class="space-y-1">
+                    <button class="nav-item active w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium bg-accent text-accent-foreground">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </button>
+                    <button class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                        <i data-lucide="building" class="w-4 h-4"></i>
+                        <span class="nav-text">Companies</span>
+                    </button>
+                    <button class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                        <span class="nav-text">Analytics</span>
+                    </button>
+                    <button class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span class="nav-text">Profile</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <span class="text-xs font-medium text-primary-foreground">AJ</span>
+                    </div>
+                    <div class="flex-1 nav-text">
+                        <div class="text-sm font-medium">Alex Johnson</div>
+                        <div class="text-xs text-muted-foreground">Senior Recruiter</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [Main application content area] -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <header class="bg-card border-b border-border px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-semibold text-foreground">Dashboard</h1>
+                        <p class="text-sm text-muted-foreground">Track your outreach campaigns and performance</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Theme Toggle -->
+                        <button id="theme-toggle" class="p-2 rounded-md hover:bg-accent">
+                            <i data-lucide="sun" class="w-4 h-4 dark:hidden"></i>
+                            <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+                        </button>
+                        <!-- Notifications -->
+                        <button class="p-2 rounded-md hover:bg-accent relative">
+                            <i data-lucide="bell" class="w-4 h-4"></i>
+                            <span class="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full flex items-center justify-center">
+                                <span class="text-xs text-destructive-foreground">2</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-auto p-6">
+                <!-- @COMPONENT: DashboardView [Dashboard content] -->
+                <div id="dashboard-view" class="space-y-6">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Emails Sent</p>
+                                    <p class="text-3xl font-bold text-foreground">47</p>
+                                    <p class="text-xs text-green-600">+12% from last month</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="mail" class="w-6 h-6 text-blue-600"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Opens</p>
+                                    <p class="text-3xl font-bold text-foreground">32</p>
+                                    <p class="text-xs text-muted-foreground">68% open rate</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="eye" class="w-6 h-6 text-green-600"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Clicks</p>
+                                    <p class="text-3xl font-bold text-foreground">18</p>
+                                    <p class="text-xs text-muted-foreground">38% click rate</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="mouse-pointer" class="w-6 h-6 text-purple-600"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Responses</p>
+                                    <p class="text-3xl font-bold text-foreground">5</p>
+                                    <p class="text-xs text-muted-foreground">11% response rate</p>
+                                </div>
+                                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="message-square" class="w-6 h-6 text-orange-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Overview Table -->
+                    <div class="bg-card rounded-lg border border-border">
+                        <div class="flex items-center justify-between p-6 border-b border-border">
+                            <h2 class="text-lg font-semibold text-foreground">Company Overview</h2>
+                            <button id="add-company-btn" class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                                Add Company
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-muted/50">
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Company</th>
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Emails</th>
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Last Attempt</th>
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Opened</th>
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Clicked</th>
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Status</th>
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody data-mock="true">
+                                    <tr class="border-b border-border hover:bg-muted/50">
+                                        <td class="py-4 px-6">
+                                            <div>
+                                                <div class="font-medium text-foreground">OpenAI</div>
+                                                <div class="text-sm text-muted-foreground">openai.com</div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6 text-sm">2 / 3</td>
+                                        <td class="py-4 px-6 text-sm text-muted-foreground">Jul 31</td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                ✅ 3x
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                                                ✅ 1x
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                                                In Progress
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <button class="inline-flex items-center px-3 py-1 border border-border rounded-md text-sm hover:bg-accent">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-border hover:bg-muted/50">
+                                        <td class="py-4 px-6">
+                                            <div>
+                                                <div class="font-medium text-foreground">Stripe</div>
+                                                <div class="text-sm text-muted-foreground">stripe.com</div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6 text-sm">3 / 3</td>
+                                        <td class="py-4 px-6 text-sm text-muted-foreground">Jul 25</td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                ✅ 2x
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                                                ✅ 2x
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                Responded
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <button class="inline-flex items-center px-3 py-1 border border-border rounded-md text-sm hover:bg-accent">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-border hover:bg-muted/50">
+                                        <td class="py-4 px-6">
+                                            <div>
+                                                <div class="font-medium text-foreground">Anthropic</div>
+                                                <div class="text-sm text-muted-foreground">anthropic.com</div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6 text-sm">1 / 3</td>
+                                        <td class="py-4 px-6 text-sm text-muted-foreground">Jul 29</td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                ✅ 1x
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                                ❌
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                                                In Progress
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <button class="inline-flex items-center px-3 py-1 border border-border rounded-md text-sm hover:bg-accent">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DashboardView -->
+
+                <!-- @COMPONENT: CompaniesView [Companies management view] -->
+                <div id="companies-view" class="hidden space-y-6">
+                    <!-- Header with filters and search -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-between">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                                <input type="text" placeholder="Search companies..." class="pl-10 w-64 px-3 py-2 border border-border rounded-md bg-background text-foreground">
+                            </div>
+                            <select class="px-3 py-2 border border-border rounded-md bg-background text-foreground w-48">
+                                <option>All Companies</option>
+                                <option>Responded</option>
+                                <option>Not Responded</option>
+                                <option>Attempts Left</option>
+                            </select>
+                        </div>
+                        <button class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                            Add Company
+                        </button>
+                    </div>
+
+                    <!-- Company Cards Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-mock="true">
+                        <div class="bg-card rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10 p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold">OpenAI</h3>
+                                    <p class="text-sm text-muted-foreground">openai.com</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                    Active
+                                </span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <!-- Progress bar -->
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Emails Sent</span>
+                                        <span>2 / 3</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div class="h-2 bg-blue-500 rounded-full" style="width: 67%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Stats -->
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Opens</div>
+                                        <div class="text-sm font-medium text-green-600">3x</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Clicks</div>
+                                        <div class="text-sm font-medium text-blue-600">1x</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Last</div>
+                                        <div class="text-sm font-medium">Jul 31</div>
+                                    </div>
+                                </div>
+                                
+                                <button class="w-full px-4 py-2 border border-border rounded-md hover:bg-accent">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-card rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10 p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold">Anthropic</h3>
+                                    <p class="text-sm text-muted-foreground">anthropic.com</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Emails Sent</span>
+                                        <span>1 / 3</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div class="h-2 bg-blue-500 rounded-full" style="width: 33%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Opens</div>
+                                        <div class="text-sm font-medium text-green-600">1x</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Clicks</div>
+                                        <div class="text-sm font-medium text-muted-foreground">0</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Last</div>
+                                        <div class="text-sm font-medium">Jul 29</div>
+                                    </div>
+                                </div>
+                                
+                                <button class="w-full px-4 py-2 border border-border rounded-md hover:bg-accent">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-card rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10 p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold">Stripe</h3>
+                                    <p class="text-sm text-muted-foreground">stripe.com</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                    Responded
+                                </span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Emails Sent</span>
+                                        <span>3 / 3</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div class="h-2 bg-green-500 rounded-full" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Opens</div>
+                                        <div class="text-sm font-medium text-green-600">2x</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Clicks</div>
+                                        <div class="text-sm font-medium text-blue-600">2x</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-muted-foreground">Last</div>
+                                        <div class="text-sm font-medium">Jul 25</div>
+                                    </div>
+                                </div>
+                                
+                                <button class="w-full px-4 py-2 border border-border rounded-md hover:bg-accent">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: CompaniesView -->
+
+                <!-- @COMPONENT: AnalyticsView [Analytics and stats view] -->
+                <div id="analytics-view" class="hidden space-y-6">
+                    <!-- Overview Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-sm font-medium text-muted-foreground mb-2">Total Emails</h3>
+                            <div class="text-3xl font-bold">47</div>
+                            <div class="text-sm text-muted-foreground">Across all campaigns</div>
+                        </div>
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-sm font-medium text-muted-foreground mb-2">Open Rate</h3>
+                            <div class="text-3xl font-bold text-blue-600">68%</div>
+                            <div class="text-sm text-muted-foreground">32 opens</div>
+                        </div>
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-sm font-medium text-muted-foreground mb-2">Click Rate</h3>
+                            <div class="text-3xl font-bold text-green-600">38%</div>
+                            <div class="text-sm text-muted-foreground">18 clicks</div>
+                        </div>
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-sm font-medium text-muted-foreground mb-2">Response Rate</h3>
+                            <div class="text-3xl font-bold text-purple-600">11%</div>
+                            <div class="text-sm text-muted-foreground">5 responses</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Performance Chart -->
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-lg font-semibold mb-4">Performance by Company</h3>
+                            <div class="h-64 flex items-end justify-around space-x-2" data-mock="true">
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 rounded-t" style="height: 60px"></div>
+                                    <div class="bg-green-500 w-8 rounded-t" style="height: 20px"></div>
+                                    <span class="text-xs text-muted-foreground">OpenAI</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 rounded-t" style="height: 40px"></div>
+                                    <div class="bg-green-500 w-8 rounded-t" style="height: 40px"></div>
+                                    <span class="text-xs text-muted-foreground">Stripe</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 rounded-t" style="height: 20px"></div>
+                                    <div class="bg-green-500 w-8 rounded-t" style="height: 0px"></div>
+                                    <span class="text-xs text-muted-foreground">Anthropic</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 rounded-t" style="height: 0px"></div>
+                                    <div class="bg-green-500 w-8 rounded-t" style="height: 0px"></div>
+                                    <span class="text-xs text-muted-foreground">Figma</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-center space-x-4 mt-4">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-blue-500 rounded"></div>
+                                    <span class="text-sm">Opens</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-green-500 rounded"></div>
+                                    <span class="text-sm">Clicks</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conversion Funnel -->
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-lg font-semibold mb-4">Conversion Funnel</h3>
+                            <div class="space-y-4" data-mock="true">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        <span class="font-medium">Emails Sent</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-right">
+                                            <div class="font-bold">47</div>
+                                            <div class="text-sm text-muted-foreground">100%</div>
+                                        </div>
+                                        <div class="w-32 bg-muted rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        <span class="font-medium">Opened</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-right">
+                                            <div class="font-bold">32</div>
+                                            <div class="text-sm text-muted-foreground">68%</div>
+                                        </div>
+                                        <div class="w-32 bg-muted rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 68%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        <span class="font-medium">Clicked</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-right">
+                                            <div class="font-bold">18</div>
+                                            <div class="text-sm text-muted-foreground">38%</div>
+                                        </div>
+                                        <div class="w-32 bg-muted rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 38%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        <span class="font-medium">Responded</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-right">
+                                            <div class="font-bold">5</div>
+                                            <div class="text-sm text-muted-foreground">11%</div>
+                                        </div>
+                                        <div class="w-32 bg-muted rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 11%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Performance Table -->
+                    <div class="bg-card rounded-lg border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold">Detailed Company Performance</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-muted/50">
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Company</th>
+                                        <th class="text-center py-3 px-6 text-sm font-medium text-muted-foreground">Emails</th>
+                                        <th class="text-center py-3 px-6 text-sm font-medium text-muted-foreground">Opens</th>
+                                        <th class="text-center py-3 px-6 text-sm font-medium text-muted-foreground">Open Rate</th>
+                                        <th class="text-center py-3 px-6 text-sm font-medium text-muted-foreground">Clicks</th>
+                                        <th class="text-center py-3 px-6 text-sm font-medium text-muted-foreground">Click Rate</th>
+                                        <th class="text-center py-3 px-6 text-sm font-medium text-muted-foreground">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody data-mock="true">
+                                    <tr class="border-b border-border hover:bg-muted/50">
+                                        <td class="py-3 px-6 font-medium">OpenAI</td>
+                                        <td class="text-center py-3">2</td>
+                                        <td class="text-center py-3">3</td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                150%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-3">1</td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                                                50%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                Active
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-border hover:bg-muted/50">
+                                        <td class="py-3 px-6 font-medium">Stripe</td>
+                                        <td class="text-center py-3">3</td>
+                                        <td class="text-center py-3">2</td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                                                67%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-3">2</td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                67%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                Active
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-muted/50">
+                                        <td class="py-3 px-6 font-medium">Anthropic</td>
+                                        <td class="text-center py-3">1</td>
+                                        <td class="text-center py-3">1</td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                100%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-3">0</td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                                0%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-3">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                Active
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: AnalyticsView -->
+
+                <!-- @COMPONENT: ProfileView [Profile settings view] -->
+                <div id="profile-view" class="hidden space-y-6 max-w-4xl">
+                    <!-- Profile Header -->
+                    <div class="bg-card rounded-lg border border-border p-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+                                <span class="text-2xl font-medium text-primary-foreground">AJ</span>
+                            </div>
+                            <div class="space-y-1">
+                                <h2 class="text-2xl font-semibold">Alex Johnson</h2>
+                                <p class="text-muted-foreground">Senior Recruiter at OutreachPro</p>
+                                <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="mail" class="w-3 h-3"></i>
+                                        alex.johnson@outreachpro.com
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                        San Francisco, CA
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 pt-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-secondary text-secondary-foreground">Pro Plan</span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs border border-border">Verified</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Personal Information -->
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center gap-2 mb-6">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                                <h3 class="text-lg font-semibold">Personal Information</h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Full Name</label>
+                                        <input type="text" value="Alex Johnson" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Position</label>
+                                        <input type="text" value="Senior Recruiter" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Email Address</label>
+                                    <input type="email" value="alex.johnson@outreachpro.com" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Phone Number</label>
+                                        <input type="text" value="+1 (555) 123-4567" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Company</label>
+                                        <input type="text" value="OutreachPro" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Location</label>
+                                    <input type="text" value="San Francisco, CA" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                                </div>
+                                <button class="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                                    Update Profile
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Appearance -->
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <h3 class="text-lg font-semibold mb-6">Appearance</h3>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="block text-sm font-medium">Theme</label>
+                                    <p class="text-sm text-muted-foreground">Choose your preferred color scheme</p>
+                                </div>
+                                <select class="px-3 py-2 border border-border rounded-md bg-background w-32">
+                                    <option>Light</option>
+                                    <option>Dark</option>
+                                    <option>System</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Notification Settings -->
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center gap-2 mb-6">
+                                <i data-lucide="bell" class="w-5 h-5"></i>
+                                <h3 class="text-lg font-semibold">Notifications</h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between py-2">
+                                    <div>
+                                        <label class="block text-sm font-medium">Email Opens</label>
+                                        <p class="text-sm text-muted-foreground">Get notified when emails are opened</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 h-6">
+                                        <input type="checkbox" checked class="opacity-0 w-0 h-0">
+                                        <span class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-primary rounded-full transition-colors">
+                                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 transition-transform transform translate-x-4"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr class="border-border">
+                                <div class="flex items-center justify-between py-2">
+                                    <div>
+                                        <label class="block text-sm font-medium">Resume Clicks</label>
+                                        <p class="text-sm text-muted-foreground">Get notified when resume links are clicked</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 h-6">
+                                        <input type="checkbox" checked class="opacity-0 w-0 h-0">
+                                        <span class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-primary rounded-full">
+                                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 transition-transform transform translate-x-4"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr class="border-border">
+                                <div class="flex items-center justify-between py-2">
+                                    <div>
+                                        <label class="block text-sm font-medium">Weekly Report</label>
+                                        <p class="text-sm text-muted-foreground">Receive weekly performance summary</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 h-6">
+                                        <input type="checkbox" class="opacity-0 w-0 h-0">
+                                        <span class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-muted rounded-full">
+                                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 transition-transform"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy & Security -->
+                        <div class="bg-card rounded-lg border border-border p-6">
+                            <div class="flex items-center gap-2 mb-6">
+                                <i data-lucide="shield" class="w-5 h-5"></i>
+                                <h3 class="text-lg font-semibold">Privacy & Security</h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between py-2">
+                                    <div>
+                                        <label class="block text-sm font-medium">Email Tracking</label>
+                                        <p class="text-sm text-muted-foreground">Enable tracking pixels in outbound emails</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 h-6">
+                                        <input type="checkbox" checked class="opacity-0 w-0 h-0">
+                                        <span class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-primary rounded-full">
+                                            <span class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 transition-transform transform translate-x-4"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr class="border-border">
+                                <div class="space-y-2">
+                                    <button class="w-full flex items-center justify-center px-4 py-2 border border-border rounded-md hover:bg-accent">
+                                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                        Export Data
+                                    </button>
+                                    <button class="w-full flex items-center justify-center px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90">
+                                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                                        Delete Account
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Statistics -->
+                    <div class="bg-card rounded-lg border border-border p-6">
+                        <h3 class="text-lg font-semibold mb-6">Account Statistics</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600">47</div>
+                                <div class="text-sm text-muted-foreground">Total Emails Sent</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">68%</div>
+                                <div class="text-sm text-muted-foreground">Average Open Rate</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-600">23</div>
+                                <div class="text-sm text-muted-foreground">Companies Contacted</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-600">15</div>
+                                <div class="text-sm text-muted-foreground">Days Active</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: ProfileView -->
+            </main>
+        </div>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: AppShell -->
+
+    <!-- @COMPONENT: AddCompanyModal [Modal for adding new companies] -->
+    <div id="add-company-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-card border border-border rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h2 class="text-xl font-semibold">Add New Company</h2>
+                <button id="close-modal" class="p-2 hover:bg-accent rounded-md">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Company Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium">Company Information</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Company Name *</label>
+                            <input type="text" placeholder="e.g., Acme Corp" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Website *</label>
+                            <input type="text" placeholder="e.g., acme.com" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">LinkedIn URL</label>
+                        <input type="url" placeholder="https://linkedin.com/company/acme" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                    </div>
+                </div>
+
+                <!-- People -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium">Contacts</h3>
+                        <button class="inline-flex items-center px-3 py-1 border border-border rounded-md text-sm hover:bg-accent">
+                            <i data-lucide="plus" class="w-4 h-4 mr-1"></i>
+                            Add Person
+                        </button>
+                    </div>
+                    
+                    <!-- Person 1 -->
+                    <div class="border border-border rounded-lg p-4 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-medium">Contact 1</h4>
+                            <button class="text-destructive hover:bg-destructive/10 p-1 rounded">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Full Name *</label>
+                                <input type="text" placeholder="John Doe" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Position</label>
+                                <input type="text" placeholder="Software Engineer" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email *</label>
+                                <input type="email" placeholder="john@acme.com" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">LinkedIn</label>
+                                <input type="url" placeholder="https://linkedin.com/in/johndoe" class="w-full px-3 py-2 border border-border rounded-md bg-background">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex justify-end space-x-3 pt-4 border-t border-border">
+                    <button id="cancel-modal" class="px-4 py-2 border border-border rounded-md hover:bg-accent">
+                        Cancel
+                    </button>
+                    <button class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                        Add Company
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AddCompanyModal -->
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        (function() {
+            // Theme management
+            const themeToggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+            let currentTheme = 'light';
+
+            themeToggle.addEventListener('click', () => {
+                currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+                html.className = currentTheme;
+                localStorage.setItem('theme', currentTheme);
+            });
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                currentTheme = savedTheme;
+                html.className = currentTheme;
+            }
+
+            // Sidebar management
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const logoText = document.getElementById('logo-text');
+            const navTexts = document.querySelectorAll('.nav-text');
+            let sidebarExpanded = true;
+
+            sidebarToggle.addEventListener('click', () => {
+                sidebarExpanded = !sidebarExpanded;
+                
+                if (sidebarExpanded) {
+                    sidebar.classList.remove('sidebar-collapsed');
+                    sidebar.classList.add('sidebar-expanded');
+                    logoText.style.display = 'flex';
+                    navTexts.forEach(text => text.style.display = 'block');
+                } else {
+                    sidebar.classList.remove('sidebar-expanded');
+                    sidebar.classList.add('sidebar-collapsed');
+                    logoText.style.display = 'none';
+                    navTexts.forEach(text => text.style.display = 'none');
+                }
+            });
+
+            // Navigation
+            const navItems = document.querySelectorAll('.nav-item');
+            const views = {
+                'Dashboard': 'dashboard-view',
+                'Companies': 'companies-view',
+                'Analytics': 'analytics-view',
+                'Profile': 'profile-view'
+            };
+
+            navItems.forEach((item, index) => {
+                item.addEventListener('click', () => {
+                    // Remove active class from all nav items
+                    navItems.forEach(nav => nav.classList.remove('active', 'bg-accent', 'text-accent-foreground'));
+                    navItems.forEach(nav => nav.classList.add('text-muted-foreground', 'hover:bg-accent', 'hover:text-accent-foreground'));
+                    
+                    // Add active class to clicked item
+                    item.classList.add('active', 'bg-accent', 'text-accent-foreground');
+                    item.classList.remove('text-muted-foreground', 'hover:bg-accent', 'hover:text-accent-foreground');
+
+                    // Show corresponding view
+                    const navText = item.querySelector('.nav-text').textContent;
+                    Object.values(views).forEach(viewId => {
+                        document.getElementById(viewId).classList.add('hidden');
+                    });
+                    
+                    if (views[navText]) {
+                        document.getElementById(views[navText]).classList.remove('hidden');
+                    }
+
+                    // Update page title
+                    document.querySelector('header h1').textContent = navText;
+                    document.querySelector('header p').textContent = getSubtitle(navText);
+                });
+            });
+
+            function getSubtitle(section) {
+                const subtitles = {
+                    'Dashboard': 'Track your outreach campaigns and performance',
+                    'Companies': 'Manage your target companies and contacts',
+                    'Analytics': 'View detailed performance analytics and insights',
+                    'Profile': 'Manage your account settings and preferences'
+                };
+                return subtitles[section] || '';
+            }
+
+            // Modal management
+            const addCompanyBtn = document.getElementById('add-company-btn');
+            const modal = document.getElementById('add-company-modal');
+            const closeModal = document.getElementById('close-modal');
+            const cancelModal = document.getElementById('cancel-modal');
+
+            addCompanyBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+
+            closeModal.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            cancelModal.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+
+            // TODO: Implement business logic for:
+            // - Form submissions and data persistence
+            // - API calls for company/contact management
+            // - Email tracking and analytics
+            // - Real-time notifications
+            // - Data export functionality
+        })();
+    </script>
+</body>
+</html>
