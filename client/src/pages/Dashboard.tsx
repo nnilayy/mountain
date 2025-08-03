@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AddCompanyModal from "@/components/AddCompanyModal";
 import { Company, EmailStat } from "@shared/schema";
@@ -22,6 +24,8 @@ interface CompanyAttempt {
 export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery<Company[]>({
     queryKey: ["/api/companies"],
@@ -31,13 +35,39 @@ export default function Dashboard() {
     queryKey: ["/api/email-stats"],
   });
 
+  // Filter companies based on search term and status
+  const filteredCompanies = companies.filter((company: Company) => {
+    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         company.website.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (filterStatus === "all") return matchesSearch;
+    if (filterStatus === "responded") return matchesSearch && company.hasResponded;
+    if (filterStatus === "not-responded") return matchesSearch && !company.hasResponded;
+    if (filterStatus === "attempts-left") return matchesSearch && company.totalEmails < 3;
+    
+    return matchesSearch;
+  });
+
   if (isLoadingCompanies || isLoadingStats) {
     return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
+      <div className="space-y-6">
+        {/* Page Title Skeleton */}
+        <div className="mb-6">
+          <Skeleton className="h-8 w-80 mb-2" />
+          <Skeleton className="h-4 w-64" />
         </div>
+        
+        {/* Header row skeleton */}
+        <div className="flex flex-row gap-2 lg:gap-4 justify-between items-center mb-6 min-w-0">
+          <div className="flex flex-row gap-2 lg:gap-3 items-center min-w-0 flex-1">
+            <Skeleton className="h-5 w-16 lg:w-20" /> {/* Company count */}
+            <Skeleton className="h-10 flex-1 max-w-48 lg:max-w-64" /> {/* Search bar */}
+            <Skeleton className="h-10 w-32 lg:w-48" /> {/* Filter */}
+          </div>
+          <Skeleton className="h-10 w-16 lg:w-28" /> {/* Add button */}
+        </div>
+        
+        {/* Company cards skeleton */}
         {[...Array(3)].map((_, i) => (
           <Card key={i}>
             <CardContent className="p-6">
@@ -120,24 +150,70 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Company Outreach Dashboard</h1>
-          <p className="text-muted-foreground">Track your outreach progress and responses</p>
+    <div>
+      {/* Page Title */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Company Outreach Dashboard</h1>
+        <p className="text-muted-foreground">Track your outreach progress and responses</p>
+      </div>
+
+      {/* Header row with company count, search, filters and add button */}
+      <div className="flex flex-row gap-2 lg:gap-4 justify-between items-center mb-3 min-w-0">
+        <div className="flex flex-row gap-2 lg:gap-3 items-center min-w-0 flex-1">
+          {/* Company Count */}
+          <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+            <span className="text-xs lg:text-sm font-medium text-muted-foreground">Companies:</span>
+            <span className="text-xs lg:text-sm font-semibold">
+              {filteredCompanies.length}
+            </span>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="relative flex-1 min-w-0 max-w-56 lg:max-w-80">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full text-xs lg:text-sm"
+              data-testid="input-search"
+            />
+          </div>
         </div>
-        <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Company
-        </Button>
+        
+        <div className="flex flex-row gap-2 lg:gap-3 items-center flex-shrink-0">
+          {/* Filters */}
+          <div className="min-w-0 max-w-32 lg:max-w-48">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-full text-xs lg:text-sm" data-testid="select-filter">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Companies</SelectItem>
+                <SelectItem value="responded">Responded</SelectItem>
+                <SelectItem value="not-responded">Not Responded</SelectItem>
+                <SelectItem value="attempts-left">Attempts Left</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Add Company Button */}
+          <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company" size="sm" className="h-10 flex-shrink-0 text-xs lg:text-sm px-2 lg:px-3">
+            <Plus className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-2" />
+            <span className="hidden sm:inline">Add Company</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        </div>
       </div>
 
       {/* Company Cards */}
-      {companies.length === 0 ? (
+      {filteredCompanies.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No companies added yet</p>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || filterStatus !== "all" ? "No companies match your search criteria" : "No companies added yet"}
+            </p>
             <Button 
               variant="outline" 
               onClick={() => setShowAddModal(true)} 
@@ -149,7 +225,7 @@ export default function Dashboard() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {companies.map((company: Company, index: number) => {
+          {filteredCompanies.map((company: Company, index: number) => {
             const isExpanded = expandedCompanies.has(company.id);
             const latestData = getLatestAttemptData(company);
             const attempts = getCompanyAttempts(company.id);
@@ -158,58 +234,86 @@ export default function Dashboard() {
               <Card key={company.id} className="overflow-hidden">
                 <CardContent className="p-0">
                   {/* Main Company Row */}
-                  <div className="p-6 bg-card">
-                    <div className="grid grid-cols-8 gap-4 items-center">
-                      <div className="col-span-2">
-                        <div className="font-semibold text-foreground" data-testid={`text-company-name-${index}`}>
+                  <div className="px-3 py-3 lg:px-6 lg:py-4 bg-card">
+                    <div className="grid grid-cols-9 gap-3 items-start text-xs lg:text-sm">
+                      {/* Company Column */}
+                      <div className="col-span-2 px-2 pt-2">
+                        <div className="font-semibold text-foreground truncate" data-testid={`text-company-name-${index}`}>
                           {company.name}
                         </div>
-                        <div className="text-sm text-muted-foreground">{company.website}</div>
+                        <div className="text-xs text-muted-foreground truncate">{company.website}</div>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="font-medium">Attempt {latestData.currentAttempt}</div>
+                      {/* Attempt Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="font-medium text-center h-6 flex items-center">#{latestData.currentAttempt}</div>
+                        <div className="text-xs text-muted-foreground">attempt</div>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="font-medium">{latestData.peopleContacted}</div>
+                      {/* People Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.peopleContacted}</div>
                         <div className="text-xs text-muted-foreground">people</div>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="font-medium">{latestData.emailOpened}</div>
-                        <div className="text-xs text-muted-foreground">opened</div>
+                      {/* Email Opens Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.emailOpened}</div>
+                        <div className="text-xs text-muted-foreground text-center">
+                          <div>emails</div>
+                          <div>opened</div>
+                        </div>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="font-medium">{latestData.resumeOpened}</div>
-                        <div className="text-xs text-muted-foreground">resume</div>
+                      {/* Resume Opens Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.resumeOpened}</div>
+                        <div className="text-xs text-muted-foreground text-center">
+                          <div>resume</div>
+                          <div>opened</div>
+                        </div>
                       </div>
                       
-                      <div className="text-center">
-                        <Badge variant={latestData.response === "Yes" ? "default" : "secondary"}>
-                          {latestData.response}
-                        </Badge>
+                      {/* Response Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="h-6 flex items-center">
+                          <Badge variant={latestData.response === "Yes" ? "default" : "secondary"} className="text-xs px-2 min-w-[32px] text-center">
+                            {latestData.response}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">Response</div>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Badge variant={latestData.decision === "Yes" ? "default" : "outline"}>
+                      {/* Status Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="h-6 flex items-center">
+                          <Badge 
+                            variant={latestData.decision === "Yes" ? "default" : latestData.decision === "Pending" ? "secondary" : "outline"} 
+                            className="text-xs px-2 min-w-[32px] text-center"
+                          >
                             {latestData.decision}
                           </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">Status</div>
+                      </div>
+                      
+                      {/* Details Column */}
+                      <div className="flex flex-col items-center px-2">
+                        <div className="h-6 flex items-center justify-center">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleCompanyExpansion(company.id)}
-                            className="h-8 w-8 p-0"
+                            className="h-5 w-5 lg:h-8 lg:w-8 p-0"
                           >
                             {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
+                              <ChevronDown className="h-3 w-3 lg:h-4 lg:w-4" />
                             ) : (
-                              <ChevronRight className="h-4 w-4" />
+                              <ChevronRight className="h-3 w-3 lg:h-4 lg:w-4" />
                             )}
                           </Button>
                         </div>
+                        <div className="text-xs text-muted-foreground">Details</div>
                       </div>
                     </div>
                   </div>
@@ -229,21 +333,21 @@ export default function Dashboard() {
                               {attempts.map((attempt) => (
                                 <div
                                   key={attempt.attemptNumber}
-                                  className="grid grid-cols-7 gap-4 py-2 px-4 bg-background rounded-md text-sm"
+                                  className="grid grid-cols-9 gap-3 py-2 px-4 bg-background rounded-md text-sm"
                                 >
-                                  <div className="font-medium">
+                                  <div className="col-span-2 font-medium px-2">
                                     Attempt {attempt.attemptNumber}
                                     <div className="text-xs text-muted-foreground">{attempt.sentDate}</div>
                                   </div>
-                                  <div className="text-center">{attempt.peopleContacted}</div>
-                                  <div className="text-center">{attempt.emailOpened}</div>
-                                  <div className="text-center">{attempt.resumeOpened}</div>
-                                  <div className="text-center">
+                                  <div className="text-center px-2">{attempt.peopleContacted}</div>
+                                  <div className="text-center px-2">{attempt.emailOpened}</div>
+                                  <div className="text-center px-2">{attempt.resumeOpened}</div>
+                                  <div className="text-center px-2">
                                     <Badge variant={attempt.response === "Yes" ? "default" : "secondary"} className="text-xs">
                                       {attempt.response}
                                     </Badge>
                                   </div>
-                                  <div className="text-center">
+                                  <div className="text-center px-2">
                                     <Badge variant={attempt.decision === "Yes" ? "default" : "outline"} className="text-xs">
                                       {attempt.decision}
                                     </Badge>
@@ -263,21 +367,6 @@ export default function Dashboard() {
           })}
         </div>
       )}
-
-      {/* Column Headers for Reference */}
-      <Card className="bg-muted/20">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-8 gap-4 text-sm font-medium text-muted-foreground">
-            <div className="col-span-2">Company</div>
-            <div className="text-center">Email Count</div>
-            <div className="text-center">People Contacted</div>
-            <div className="text-center">Email Opened</div>
-            <div className="text-center">Resume Opens</div>
-            <div className="text-center">Response</div>
-            <div className="text-center">Status/Decision</div>
-          </div>
-        </CardContent>
-      </Card>
 
       <AddCompanyModal 
         open={showAddModal} 

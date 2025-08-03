@@ -41,16 +41,10 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-card border-b border-border px-6" style={{ height: '65px' }}>
-          <div className="flex items-center justify-between h-full">
-            <div>
-              <h1 className="text-lg font-semibold text-foreground" data-testid="text-page-title">
-                {currentPage.title}
-              </h1>
-              <p className="text-sm text-muted-foreground" data-testid="text-page-description">
-                {currentPage.description}
-              </p>
-            </div>
-
+          <div className="flex items-center justify-center h-full">
+            <h1 className="text-lg font-semibold text-foreground">
+              Mountains
+            </h1>
           </div>
         </header>
 

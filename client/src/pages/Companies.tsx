@@ -54,12 +54,13 @@ export default function Companies() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-10 w-48" />
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Skeleton className="h-6 w-24" /> {/* Company count */}
+            <Skeleton className="h-10 w-64" /> {/* Search bar */}
+            <Skeleton className="h-10 w-48" /> {/* Filter */}
           </div>
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-32" /> {/* Add button */}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
@@ -78,9 +79,18 @@ export default function Companies() {
 
   return (
     <div className="space-y-6">
-      {/* Header with filters and search */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* Header with company count, search, filters and add button */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          {/* Company Count */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Companies:</span>
+            <Badge variant="secondary" className="text-sm">
+              {filteredCompanies.length} {filteredCompanies.length === companies.length ? `of ${companies.length}` : `of ${companies.length} total`}
+            </Badge>
+          </div>
+          
+          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -92,6 +102,8 @@ export default function Companies() {
               data-testid="input-search"
             />
           </div>
+          
+          {/* Filters */}
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-48" data-testid="select-filter">
               <SelectValue />
@@ -104,6 +116,8 @@ export default function Companies() {
             </SelectContent>
           </Select>
         </div>
+        
+        {/* Add Company Button */}
         <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company">
           <Plus className="w-4 h-4 mr-2" />
           Add Company
