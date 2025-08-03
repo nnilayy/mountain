@@ -9,12 +9,15 @@ export const companies = pgTable("companies", {
   website: text("website").notNull(),
   linkedin: text("linkedin"),
   totalEmails: integer("total_emails").notNull().default(0),
+  totalPeople: integer("total_people").notNull().default(0),
   lastAttempt: text("last_attempt"),
   hasOpened: boolean("has_opened").notNull().default(false),
   openCount: integer("open_count").notNull().default(0),
   hasClicked: boolean("has_clicked").notNull().default(false),
   clickCount: integer("click_count").notNull().default(0),
+  resumeOpenCount: integer("resume_open_count").notNull().default(0),
   hasResponded: boolean("has_responded").notNull().default(false),
+  decision: text("decision"), // "yes", "no", or null for pending
 });
 
 export const people = pgTable("people", {
@@ -30,16 +33,20 @@ export const people = pgTable("people", {
   openCount: integer("open_count").notNull().default(0),
   clicked: boolean("clicked").notNull().default(false),
   clickCount: integer("click_count").notNull().default(0),
+  resumeOpened: boolean("resume_opened").notNull().default(false),
+  resumeOpenCount: integer("resume_open_count").notNull().default(0),
   responded: boolean("responded").notNull().default(false),
 });
 
 export const emailStats = pgTable("email_stats", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   personId: varchar("person_id").notNull(),
+  companyId: varchar("company_id").notNull(),
   attemptNumber: integer("attempt_number").notNull(),
   sentDate: text("sent_date").notNull(),
   openCount: integer("open_count").notNull().default(0),
   clickCount: integer("click_count").notNull().default(0),
+  resumeOpenCount: integer("resume_open_count").notNull().default(0),
   responded: boolean("responded").notNull().default(false),
   subject: text("subject").notNull(),
 });
