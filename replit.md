@@ -1,8 +1,8 @@
-# OutreachPro
+# Mountains
 
 ## Overview
 
-OutreachPro is a comprehensive outreach management platform designed to help recruiters and sales professionals track their email campaigns, manage company contacts, and analyze outreach performance. The application provides a complete solution for managing outreach workflows with features including company management, contact tracking, email analytics, and performance reporting.
+Mountains is a comprehensive outreach management platform designed to help recruiters and sales professionals track their email campaigns, manage company contacts, and analyze outreach performance. The application provides a complete solution for managing outreach workflows with features including company management, contact tracking, email analytics, and performance reporting.
 
 ## User Preferences
 

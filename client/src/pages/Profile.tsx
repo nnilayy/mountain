@@ -42,10 +42,10 @@ export default function Profile() {
             </div>
             <div className="space-y-1">
               <h2 className="text-2xl font-semibold" data-testid="text-profile-name">Alex Johnson</h2>
-              <p className="text-muted-foreground">Senior Recruiter at OutreachPro</p>
+              <p className="text-muted-foreground">Senior Recruiter at Mountains</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <span>alex.johnson@outreachpro.com</span>
+                  <span>alex.johnson@mountains.com</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span>San Francisco, CA</span>
@@ -97,7 +97,7 @@ export default function Profile() {
               <Input 
                 id="email" 
                 type="email" 
-                defaultValue="alex.johnson@outreachpro.com" 
+                defaultValue="alex.johnson@mountains.com" 
                 data-testid="input-email"
               />
             </div>
@@ -114,7 +114,7 @@ export default function Profile() {
                 <Label htmlFor="company">Company</Label>
                 <Input 
                   id="company" 
-                  defaultValue="OutreachPro" 
+                  defaultValue="Mountains" 
                   data-testid="input-company"
                 />
               </div>
