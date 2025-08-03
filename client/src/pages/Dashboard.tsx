@@ -21,6 +21,31 @@ interface CompanyAttempt {
   decision: string;
 }
 
+// Format date to DD/MM/YY format (23/07/24)
+function formatDateShort(dateString: string): string {
+  // Handle various date formats that might come from mock data
+  let date: Date;
+  
+  // If it's already a short format like "Jul 31", convert to current year
+  if (dateString.match(/^[A-Za-z]{3} \d{1,2}$/)) {
+    const currentYear = new Date().getFullYear();
+    date = new Date(`${dateString} ${currentYear}`);
+  } else {
+    date = new Date(dateString);
+  }
+  
+  // If invalid date, return original string
+  if (isNaN(date.getTime())) {
+    return dateString;
+  }
+  
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear().toString().slice(-2);
+  
+  return `${day}/${month}/${year}`;
+}
+
 export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
@@ -126,26 +151,18 @@ export default function Dashboard() {
   };
 
   const getLatestAttemptData = (company: Company) => {
-    const attempts = getCompanyAttempts(company.id);
-    if (attempts.length === 0) {
-      return {
-        currentAttempt: 1,
-        peopleContacted: company.totalPeople || 0,
-        emailOpened: `${company.openCount}/${company.totalPeople || 0}`,
-        resumeOpened: `${company.resumeOpenCount || 0}/${company.totalPeople || 0}`,
-        response: company.hasResponded ? "Yes" : "No",
-        decision: company.decision || "Pending"
-      };
-    }
+    // Use the company data directly from API - no complex calculations needed
+    const maxAttempts = 3;
+    const currentAttempt = Math.min(company.totalEmails, maxAttempts);
     
-    const latest = attempts[attempts.length - 1];
     return {
-      currentAttempt: latest.attemptNumber,
-      peopleContacted: latest.peopleContacted,
-      emailOpened: latest.emailOpened,
-      resumeOpened: latest.resumeOpened,
-      response: latest.response,
-      decision: latest.decision
+      currentAttempt: currentAttempt,
+      peopleContacted: company.totalPeople || 0,
+      emailOpened: `${company.openCount}/${company.totalPeople || 0}`,
+      resumeOpened: `${company.resumeOpenCount || 0}/${company.totalPeople || 0}`,
+      response: company.hasResponded ? "Yes" : "No",
+      decision: company.decision || "Pending",
+      lastSent: company.lastAttempt ? formatDateShort(company.lastAttempt) : "Never"
     };
   };
 
@@ -159,7 +176,7 @@ export default function Dashboard() {
 
       {/* Header row with company count, search, filters and add button */}
       <div className="flex flex-row gap-2 lg:gap-4 justify-between items-center mb-3 min-w-0">
-        <div className="flex flex-row gap-2 lg:gap-3 items-center min-w-0 flex-1">
+        <div className="flex flex-row gap-3 lg:gap-4 items-center min-w-0 flex-1">
           {/* Company Count */}
           <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
             <span className="text-xs lg:text-sm font-medium text-muted-foreground">Companies:</span>
@@ -235,57 +252,79 @@ export default function Dashboard() {
                 <CardContent className="p-0">
                   {/* Main Company Row */}
                   <div className="px-3 py-3 lg:px-6 lg:py-4 bg-card">
-                    <div className="grid grid-cols-9 gap-3 items-start text-xs lg:text-sm">
+                    <div className="grid grid-cols-10 gap-2 items-end text-xs lg:text-sm">
                       {/* Company Column */}
-                      <div className="col-span-2 px-2 pt-2">
-                        <div className="font-semibold text-foreground truncate" data-testid={`text-company-name-${index}`}>
-                          {company.name}
+                      <div className="col-span-2 px-2 flex items-center justify-start h-full">
+                        <div className="flex flex-col">
+                          <div className="font-semibold text-foreground truncate" data-testid={`text-company-name-${index}`}>
+                            {company.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">{company.website}</div>
                         </div>
-                        <div className="text-xs text-muted-foreground truncate">{company.website}</div>
                       </div>
                       
-                      {/* Attempt Column */}
-                      <div className="flex flex-col items-center px-2">
-                        <div className="font-medium text-center h-6 flex items-center">#{latestData.currentAttempt}</div>
-                        <div className="text-xs text-muted-foreground">attempt</div>
+                      {/* Reach Attempt Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[60px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Reach</div>
+                          <div>Attempt</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.currentAttempt}/3</div>
                       </div>
                       
-                      {/* People Column */}
-                      <div className="flex flex-col items-center px-2">
+                      {/* Last Sent Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[85px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Last</div>
+                          <div>Sent</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center text-xs whitespace-nowrap">{latestData.lastSent}</div>
+                      </div>
+                      
+                      {/* People Reached Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[60px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>People</div>
+                          <div>Reached</div>
+                        </div>
                         <div className="font-medium text-center h-6 flex items-center">{latestData.peopleContacted}</div>
-                        <div className="text-xs text-muted-foreground">people</div>
                       </div>
                       
                       {/* Email Opens Column */}
-                      <div className="flex flex-col items-center px-2">
-                        <div className="font-medium text-center h-6 flex items-center">{latestData.emailOpened}</div>
-                        <div className="text-xs text-muted-foreground text-center">
-                          <div>emails</div>
-                          <div>opened</div>
+                      <div className="flex flex-col items-center px-2 min-w-[55px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Emails</div>
+                          <div>Opened</div>
                         </div>
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.emailOpened}</div>
                       </div>
                       
                       {/* Resume Opens Column */}
-                      <div className="flex flex-col items-center px-2">
-                        <div className="font-medium text-center h-6 flex items-center">{latestData.resumeOpened}</div>
-                        <div className="text-xs text-muted-foreground text-center">
-                          <div>resume</div>
-                          <div>opened</div>
+                      <div className="flex flex-col items-center px-2 min-w-[55px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Resume</div>
+                          <div>Opened</div>
                         </div>
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.resumeOpened}</div>
                       </div>
                       
                       {/* Response Column */}
-                      <div className="flex flex-col items-center px-2">
+                      <div className="flex flex-col items-center px-2 min-w-[65px]">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap mb-1">Response</div>
                         <div className="h-6 flex items-center">
-                          <Badge variant={latestData.response === "Yes" ? "default" : "secondary"} className="text-xs px-2 min-w-[32px] text-center">
+                          <span className={`font-medium text-xs px-2 py-1 rounded-md ${
+                            latestData.response === "Yes" 
+                              ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30" 
+                              : "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30"
+                          }`}>
                             {latestData.response}
-                          </Badge>
+                          </span>
                         </div>
-                        <div className="text-xs text-muted-foreground">Response</div>
                       </div>
                       
                       {/* Status Column */}
-                      <div className="flex flex-col items-center px-2">
+                      <div className="flex flex-col items-center px-2 min-w-[60px]">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap mb-1">Status</div>
                         <div className="h-6 flex items-center">
                           <Badge 
                             variant={latestData.decision === "Yes" ? "default" : latestData.decision === "Pending" ? "secondary" : "outline"} 
@@ -294,11 +333,11 @@ export default function Dashboard() {
                             {latestData.decision}
                           </Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground">Status</div>
                       </div>
                       
                       {/* Details Column */}
-                      <div className="flex flex-col items-center px-2">
+                      <div className="flex flex-col items-center px-2 min-w-[50px]">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap mb-1">Details</div>
                         <div className="h-6 flex items-center justify-center">
                           <Button
                             variant="ghost"
@@ -313,7 +352,6 @@ export default function Dashboard() {
                             )}
                           </Button>
                         </div>
-                        <div className="text-xs text-muted-foreground">Details</div>
                       </div>
                     </div>
                   </div>
@@ -333,26 +371,31 @@ export default function Dashboard() {
                               {attempts.map((attempt) => (
                                 <div
                                   key={attempt.attemptNumber}
-                                  className="grid grid-cols-9 gap-3 py-2 px-4 bg-background rounded-md text-sm"
+                                  className="grid grid-cols-10 gap-2 py-2 px-4 bg-background rounded-md text-sm"
                                 >
                                   <div className="col-span-2 font-medium px-2">
                                     Attempt {attempt.attemptNumber}
-                                    <div className="text-xs text-muted-foreground">{attempt.sentDate}</div>
                                   </div>
-                                  <div className="text-center px-2">{attempt.peopleContacted}</div>
-                                  <div className="text-center px-2">{attempt.emailOpened}</div>
-                                  <div className="text-center px-2">{attempt.resumeOpened}</div>
-                                  <div className="text-center px-2">
-                                    <Badge variant={attempt.response === "Yes" ? "default" : "secondary"} className="text-xs">
+                                  <div className="text-center px-2 min-w-[60px]">{attempt.attemptNumber}/3</div>
+                                  <div className="text-center px-2 text-xs min-w-[85px] whitespace-nowrap">{formatDateShort(attempt.sentDate)}</div>
+                                  <div className="text-center px-2 min-w-[60px]">{attempt.peopleContacted}</div>
+                                  <div className="text-center px-2 min-w-[55px]">{attempt.emailOpened}</div>
+                                  <div className="text-center px-2 min-w-[55px]">{attempt.resumeOpened}</div>
+                                  <div className="text-center px-2 min-w-[65px]">
+                                    <span className={`font-medium text-xs px-2 py-1 rounded-md ${
+                                      attempt.response === "Yes" 
+                                        ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30" 
+                                        : "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30"
+                                    }`}>
                                       {attempt.response}
-                                    </Badge>
+                                    </span>
                                   </div>
-                                  <div className="text-center px-2">
+                                  <div className="text-center px-2 min-w-[60px]">
                                     <Badge variant={attempt.decision === "Yes" ? "default" : "outline"} className="text-xs">
                                       {attempt.decision}
                                     </Badge>
                                   </div>
-                                  <div></div>
+                                  <div className="min-w-[50px]"></div>
                                 </div>
                               ))}
                             </div>
