@@ -11,6 +11,10 @@ const pageInfo = {
     title: "Dashboard",
     description: "Track your outreach campaigns and performance"
   },
+  "/archive": {
+    title: "Archive",
+    description: "View and manage your archived companies"
+  },
   "/companies": {
     title: "Companies",
     description: "Manage your target companies and contacts"

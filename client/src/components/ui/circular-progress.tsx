@@ -20,9 +20,9 @@ export function CircularProgress({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
   
   const sizeConfig = {
-    sm: { container: 'w-8 h-8', text: 'text-xs', svg: 'w-8 h-8' },
-    md: { container: 'w-12 h-12', text: 'text-sm', svg: 'w-12 h-12' },
-    lg: { container: 'w-16 h-16', text: 'text-base', svg: 'w-16 h-16' }
+    sm: { container: 'w-8 h-8', text: 'text-[10px]', svg: 'w-8 h-8' },
+    md: { container: 'w-12 h-12', text: 'text-xs', svg: 'w-12 h-12' },
+    lg: { container: 'w-16 h-16', text: 'text-sm', svg: 'w-16 h-16' }
   };
   
   const config = sizeConfig[size];

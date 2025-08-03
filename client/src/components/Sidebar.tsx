@@ -1,4 +1,4 @@
-import { Mountain, LayoutDashboard, Building, BarChart3, User, PanelLeft } from "lucide-react";
+import { Mountain, LayoutDashboard, Building, BarChart3, User, PanelLeft, Archive } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ interface SidebarProps {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Archive", href: "/archive", icon: Archive },
   { name: "Companies", href: "/companies", icon: Building },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];

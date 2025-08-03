@@ -50,7 +50,7 @@ function formatDateShort(dateString: string): string {
   return `${day}/${month}/${year}`;
 }
 
-export default function Dashboard() {
+export default function Archive() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
@@ -125,14 +125,14 @@ export default function Dashboard() {
     return company.decision === "Yes";
   };
 
-  // Filter companies to show only active ones (not archived) and then apply other filters
-  const activeCompanies = companies.filter((company: Company) => {
+  // Filter companies to show only archived ones
+  const archivedCompanies = companies.filter((company: Company) => {
     const isArchived = isCompanyArchived(company);
-    return !isArchived; // Only show non-archived companies in Dashboard
+    return isArchived;
   });
 
-  // Further filter active companies based on search term and status
-  const filteredCompanies = activeCompanies.filter((company: Company) => {
+  // Further filter archived companies based on search term and status
+  const filteredCompanies = archivedCompanies.filter((company: Company) => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          company.website.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -241,8 +241,8 @@ export default function Dashboard() {
     <div>
       {/* Page Title */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Company Outreach Dashboard</h1>
-        <p className="text-muted-foreground">Track your outreach progress and responses</p>
+        <h1 className="text-2xl font-bold text-foreground">Archived Companies</h1>
+        <p className="text-muted-foreground">View and manage your archived outreach companies</p>
       </div>
 
       {/* Header row with company count, search, filters and add button */}
@@ -250,7 +250,7 @@ export default function Dashboard() {
         <div className="flex flex-row gap-3 lg:gap-4 items-center min-w-0 flex-1">
           {/* Company Count */}
           <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
-            <span className="text-xs lg:text-sm font-medium text-muted-foreground">Companies:</span>
+            <span className="text-xs lg:text-sm font-medium text-muted-foreground">Archived:</span>
             <span className="text-xs lg:text-sm font-semibold">
               {filteredCompanies.length}
             </span>
@@ -261,7 +261,7 @@ export default function Dashboard() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search..."
+              placeholder="Search archived..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-full text-xs lg:text-sm"
@@ -278,7 +278,7 @@ export default function Dashboard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Companies</SelectItem>
+                <SelectItem value="all">All Archived</SelectItem>
                 <SelectItem value="responded">Responded</SelectItem>
                 <SelectItem value="not-responded">Not Responded</SelectItem>
                 <SelectItem value="attempts-left">Attempts Left</SelectItem>
@@ -300,15 +300,11 @@ export default function Dashboard() {
         <Card>
           <CardContent className="text-center py-12">
             <p className="text-muted-foreground mb-4">
-              {searchTerm || filterStatus !== "all" ? "No companies match your search criteria" : "No companies added yet"}
+              {searchTerm || filterStatus !== "all" ? "No archived companies match your search criteria" : "No archived companies found"}
             </p>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAddModal(true)} 
-              data-testid="button-add-first-company"
-            >
-              Add Your First Company
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              Companies appear here when their status is set to "Archived"
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -403,7 +399,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       
-                      {/* Response Column */}
+                      {/* Response Received Column */}
                       <div className="flex flex-col items-center px-2 min-w-[75px]">
                         <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
                           <div>Response</div>
