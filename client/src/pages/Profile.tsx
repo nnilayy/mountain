@@ -51,14 +51,7 @@ export default function Profile() {
                   <span>San Francisco, CA</span>
                 </div>
               </div>
-              <div className="flex gap-2 pt-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-secondary text-secondary-foreground">
-                  Pro Plan
-                </span>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs border border-border">
-                  Verified
-                </span>
-              </div>
+
             </div>
           </div>
         </CardContent>

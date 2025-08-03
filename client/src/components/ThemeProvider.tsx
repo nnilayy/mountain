@@ -44,13 +44,9 @@ export function ThemeProvider({
       
       setActualTheme(resolvedTheme);
       
+      // Instantly switch theme without transitions
       root.classList.remove('light', 'dark');
       root.classList.add(resolvedTheme);
-      
-      // Add transition class for smooth theme switching
-      if (!root.classList.contains('theme-transition')) {
-        root.classList.add('theme-transition');
-      }
     };
 
     updateActualTheme();

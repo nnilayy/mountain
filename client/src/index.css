@@ -55,28 +55,19 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-  
-  /* Override the global 200ms transition that's interfering with sidebar */
-  .sidebar-expanded *,
-  .sidebar-collapsed * {
-    transition-duration: inherit !important;
-    transition-property: inherit !important;
-    transition-timing-function: inherit !important;
-  }
 
   /* Smooth theme transitions */
-  .theme-transition,
-  .theme-transition *,
-  .theme-transition *:before,
-  .theme-transition *:after {
-    transition: background-color 100ms ease-out, 
-                color 100ms ease-out, 
-                border-color 100ms ease-out,
-                box-shadow 100ms ease-out !important;
+  body, 
+  [class*="bg-"], 
+  [class*="text-"], 
+  [class*="border-"] {
+    transition: background-color 150ms ease-out, 
+                color 150ms ease-out, 
+                border-color 150ms ease-out;
   }
 
   html {
-    transition: color-scheme 100ms ease-out;
+    color-scheme: light;
   }
 
   html.dark {
@@ -104,56 +95,31 @@
 /* Enhanced Sidebar Animation System */
 .sidebar-collapsed {
   width: 4rem;
-  transition: width 600ms cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: width 150ms ease-out;
 }
 
 .sidebar-expanded {
   width: 16rem;
-  transition: width 600ms cubic-bezier(0.23, 1, 0.32, 1) !important;
-}
-
-/* Smooth content animations */
-.sidebar-content-transition {
-  transition: all 500ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: width 150ms ease-out;
 }
 
 .sidebar-text-fade {
-  transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1), 
-              transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 150ms ease;
 }
 
 .sidebar-text-fade-out {
   opacity: 0;
-  transform: translateX(-10px);
 }
 
 .sidebar-text-fade-in {
   opacity: 1;
-  transform: translateX(0);
 }
 
-/* Removed sidebar-icon-transition and sidebar-logo-morph - using inline transitions */
 
-.sidebar-button-morph {
-  transition: all 550ms cubic-bezier(0.23, 1, 0.32, 1);
-}
 
-/* Override any global transition that might interfere */
-.sidebar-content-transition * {
-  transition: inherit !important;
-}
 
-/* Override the global 200ms transition for sidebar content only */
-.sidebar-expanded > *:not(.sidebar-expanded),
-.sidebar-collapsed > *:not(.sidebar-collapsed) {
-  transition-duration: 0ms !important;
-}
 
-/* Allow smooth width transition for main container */
-.sidebar-expanded,
-.sidebar-collapsed {
-  transition: width 600ms cubic-bezier(0.23, 1, 0.32, 1) !important;
-}
+/* Remove duplicate sidebar rules */
 
 /* Ensure collapsed state overrides any button width calculations */
 .sidebar-collapsed {
@@ -171,10 +137,9 @@
   position: relative !important;
   display: flex !important;
   align-items: center !important;
-  transition: width 600ms cubic-bezier(0.23, 1, 0.32, 1), 
-              padding 600ms cubic-bezier(0.23, 1, 0.32, 1),
-              justify-content 600ms cubic-bezier(0.23, 1, 0.32, 1),
-              background-color 200ms ease-in-out !important;
+  transition: width 150ms ease-out, 
+              padding 150ms ease-out,
+              justify-content 150ms ease-out !important;
 }
 
 /* Hover effects for navigation buttons */
@@ -279,10 +244,10 @@
   flex-shrink: 0 !important;
 }
 
-/* Icon positioning - smooth transition */
+/* Icon positioning - fast transition */
 .sidebar-nav-button svg {
   flex-shrink: 0 !important;
-  transition: margin 600ms cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: margin 150ms ease !important;
 }
 
 .sidebar-expanded .sidebar-nav-button svg {
@@ -296,59 +261,44 @@
   top: 0 !important;
 }
 
-/* Elegant text fade animations for all sidebar text elements */
+/* Simplified text fade animations */
 .sidebar-nav-text,
 .sidebar-text-fade,
 [data-testid="text-app-name"],
 [data-testid="text-user-name"],
 [data-testid="text-user-role"] {
-  transition: opacity 500ms cubic-bezier(0.23, 1, 0.32, 1) 200ms,
-              transform 500ms cubic-bezier(0.23, 1, 0.32, 1) 200ms,
-              width 400ms cubic-bezier(0.23, 1, 0.32, 1) !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
+  transition: opacity 150ms ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-/* Expanded state - delayed elegant fade in */
 .sidebar-expanded .sidebar-nav-text,
 .sidebar-expanded .sidebar-text-fade,
 .sidebar-expanded [data-testid="text-app-name"],
 .sidebar-expanded [data-testid="text-user-name"],
 .sidebar-expanded [data-testid="text-user-role"] {
-  opacity: 1 !important;
-  transform: translateX(0) !important;
-  width: auto !important;
-  transition-delay: 250ms !important;
+  opacity: 1;
 }
 
-/* Collapsed state - quick fade out */
 .sidebar-collapsed .sidebar-nav-text,
 .sidebar-collapsed .sidebar-text-fade,
 .sidebar-collapsed [data-testid="text-app-name"],
 .sidebar-collapsed [data-testid="text-user-name"],
 .sidebar-collapsed [data-testid="text-user-role"] {
-  opacity: 0 !important;
-  transform: translateX(-10px) !important;
-  width: 0 !important;
-  transition-delay: 0ms !important;
+  opacity: 0;
 }
 
-/* Toggle button elegant appearance */
+/* Toggle button fast appearance */
 [data-testid="button-toggle-sidebar"] {
-  transition: opacity 500ms cubic-bezier(0.23, 1, 0.32, 1) 200ms,
-              transform 500ms cubic-bezier(0.23, 1, 0.32, 1) 200ms !important;
+  transition: opacity 100ms ease !important;
 }
 
 .sidebar-expanded [data-testid="button-toggle-sidebar"] {
   opacity: 1 !important;
-  transform: scale(1) !important;
-  transition-delay: 300ms !important;
 }
 
 .sidebar-collapsed [data-testid="button-toggle-sidebar"] {
   opacity: 0 !important;
-  transform: scale(0.8) !important;
-  transition-delay: 0ms !important;
 }
 
 /* Container positioning */
@@ -375,18 +325,7 @@
   align-items: center !important;
 }
 
-.sidebar-expanded .sidebar-content-transition,
-.sidebar-collapsed .sidebar-content-transition,
-.sidebar-expanded .sidebar-text-fade,
-.sidebar-collapsed .sidebar-text-fade,
-.sidebar-expanded .sidebar-icon-transition,
-.sidebar-collapsed .sidebar-icon-transition,
-.sidebar-expanded .sidebar-logo-morph,
-.sidebar-collapsed .sidebar-logo-morph,
-.sidebar-expanded .sidebar-button-morph,
-.sidebar-collapsed .sidebar-button-morph {
-  transition: inherit !important;
-}
+
 
 @media (max-width: 768px) {
   .sidebar-expanded, .sidebar-collapsed {
@@ -397,37 +336,32 @@
   }
 }
 
-/* Smooth animations for theme switching */
+/* Disable chart animations during theme switch */
 @layer base {
   .recharts-cartesian-grid line,
-  .recharts-reference-line line {
-    transition: stroke 300ms ease-in-out;
-  }
-  
+  .recharts-reference-line line,
   .recharts-tooltip-wrapper {
-    transition: all 300ms ease-in-out;
+    transition: none !important;
   }
 }
 
-/* Enhanced scrollbar styling for dark mode */
+/* Simplified scrollbar styling */
 @layer base {
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--muted);
-    border-radius: 4px;
+    background: #f1f1f1;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--muted-foreground);
-    border-radius: 4px;
-    opacity: 0.5;
+    background: #888;
+    border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    opacity: 0.8;
+    background: #555;
   }
 }

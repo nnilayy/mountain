@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AddCompanyModal from "@/components/AddCompanyModal";
 import { Company } from "@shared/schema";
 
@@ -14,8 +15,9 @@ export default function Companies() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
-  const { data: companies = [], isLoading } = useQuery({
+  const { data: companies = [], isLoading } = useQuery<Company[]>({
     queryKey: ["/api/companies"],
   });
 
@@ -49,6 +51,16 @@ export default function Companies() {
     if (company.hasResponded) return "bg-green-500";
     if (company.totalEmails > 0) return "bg-blue-500";
     return "bg-gray-300";
+  };
+
+  const toggleCompanyExpansion = (companyId: string) => {
+    const newExpanded = new Set(expandedCompanies);
+    if (newExpanded.has(companyId)) {
+      newExpanded.delete(companyId);
+    } else {
+      newExpanded.add(companyId);
+    }
+    setExpandedCompanies(newExpanded);
   };
 
   if (isLoading) {
@@ -138,73 +150,152 @@ export default function Companies() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {filteredCompanies.map((company: Company, index: number) => {
             const status = getCompanyStatus(company);
             const progress = Math.min((company.totalEmails / 3) * 100, 100);
+            const isExpanded = expandedCompanies.has(company.id);
             
             return (
-              <Card key={company.id} className={getStatusColor(status)}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold" data-testid={`text-company-${index}`}>
-                        {company.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{company.website}</p>
-                    </div>
-                    {status !== "Not Started" && (
-                      <Badge 
-                        className={
-                          status === "Responded" 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-                        }
-                      >
-                        {status}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {/* Progress bar */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Emails Sent</span>
-                        <span data-testid={`text-email-progress-${index}`}>{company.totalEmails} / 3</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all ${getProgressColor(company)}`}
-                          style={{ width: `${progress}%` }}
-                        ></div>
+              <Card key={company.id} className={`${getStatusColor(status)} overflow-hidden`}>
+                <CardContent className="p-0">
+                  {/* Main Company Row */}
+                  <div className="px-6 py-4 bg-card">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-start justify-between flex-1">
+                        <div>
+                          <h3 className="text-lg font-semibold" data-testid={`text-company-${index}`}>
+                            {company.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">{company.website}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {status !== "Not Started" && (
+                            <Badge 
+                              className={
+                                status === "Responded" 
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                              }
+                            >
+                              {status}
+                            </Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleCompanyExpansion(company.id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    {/* Main Stats Grid - matches the columns exactly */}
+                    <div className="grid grid-cols-4 gap-4 items-end">
+                      {/* Progress bar */}
                       <div>
-                        <div className="text-xs text-muted-foreground">Opens</div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Emails Sent</span>
+                          <span data-testid={`text-email-progress-${index}`}>{company.totalEmails} / 3</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all ${getProgressColor(company)}`}
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      {/* Opens */}
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground mb-1">Opens</div>
                         <div className={`text-sm font-medium ${company.openCount > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
                           {company.openCount > 0 ? `${company.openCount}x` : '0'}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Clicks</div>
+                      
+                      {/* Clicks */}
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground mb-1">Clicks</div>
                         <div className={`text-sm font-medium ${company.clickCount > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
                           {company.clickCount > 0 ? `${company.clickCount}x` : '0'}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Last</div>
+                      
+                      {/* Last Attempt */}
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground mb-1">Last</div>
                         <div className="text-sm font-medium">{company.lastAttempt || 'Never'}</div>
                       </div>
                     </div>
-                    
-                    <Button variant="outline" className="w-full" data-testid={`button-view-details-${index}`}>
-                      View Details
-                    </Button>
                   </div>
+                  
+                  {/* Expanded Details with perfect alignment */}
+                  <Collapsible open={isExpanded}>
+                    <CollapsibleContent>
+                      <div className="border-t bg-gray-50 dark:bg-gray-900/50">
+                        <div className="px-6 py-3">
+                          <div className="text-sm font-medium text-muted-foreground mb-2">
+                            Attempt History
+                          </div>
+                          
+                          {/* Mock attempt data that aligns perfectly with main stats */}
+                          <div className="space-y-2">
+                            {company.totalEmails > 0 ? (
+                              [...Array(company.totalEmails)].map((_, attemptIndex) => (
+                                <div key={attemptIndex}>
+                                  {attemptIndex > 0 && <div className="h-px bg-border my-2"></div>}
+                                  <div className="grid grid-cols-4 gap-4 items-center text-sm">
+                                    {/* Progress - matches main grid column 1 */}
+                                    <div>
+                                      <span className="font-medium">Attempt {attemptIndex + 1}</span>
+                                      <div className="text-xs text-muted-foreground">
+                                        {company.lastAttempt || 'No date'}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Opens - matches main grid column 2 */}
+                                    <div className="text-center">
+                                      <div className="text-xs font-medium">
+                                        {Math.floor(Math.random() * (company.openCount + 1))}x
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Clicks - matches main grid column 3 */}
+                                    <div className="text-center">
+                                      <div className="text-xs font-medium">
+                                        {Math.floor(Math.random() * (company.clickCount + 1))}x
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Response Status - matches main grid column 4 */}
+                                    <div className="text-center">
+                                      <span className={`text-xs px-2 py-1 rounded-full ${
+                                        company.hasResponded && attemptIndex === company.totalEmails - 1
+                                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                      }`}>
+                                        {company.hasResponded && attemptIndex === company.totalEmails - 1 ? 'Responded' : 'No Response'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-sm text-muted-foreground py-2">No attempts recorded yet</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </CardContent>
               </Card>
             );

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, ChevronDown, ChevronRight, Search, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Plus, ChevronDown, ChevronRight, Search, Filter, ChevronLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +56,10 @@ export default function Dashboard() {
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [companyStatuses, setCompanyStatuses] = useState<{[key: string]: boolean}>({});
   const [companyDecisions, setCompanyDecisions] = useState<{[key: string]: string}>({});
   const [companyResponses, setCompanyResponses] = useState<{[key: string]: string}>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery<Company[]>({
     queryKey: ["/api/companies"],
@@ -67,12 +69,22 @@ export default function Dashboard() {
     queryKey: ["/api/email-stats"],
   });
 
-  // Function to set company status
+  // Mutation to update company status
+  const updateCompanyMutation = useMutation({
+    mutationFn: async ({ companyId, decision }: { companyId: string, decision: string }) => {
+      const response = await apiRequest("PATCH", `/api/companies/${companyId}`, { decision });
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch companies to update the UI across all pages
+      queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
+    },
+  });
+
+  // Function to set company status using the backend API
   const setCompanyStatus = (companyId: string, isArchived: boolean) => {
-    setCompanyStatuses(prev => ({
-      ...prev,
-      [companyId]: isArchived
-    }));
+    const decision = isArchived ? "Yes" : "No";
+    updateCompanyMutation.mutate({ companyId, decision });
   };
 
   // Function to set company decision
@@ -93,10 +105,6 @@ export default function Dashboard() {
 
   // Helper function to get current status
   const getCompanyStatus = (company: Company) => {
-    // Check local state first, otherwise fall back to original decision logic
-    if (companyStatuses.hasOwnProperty(company.id)) {
-      return companyStatuses[company.id] ? "Archived" : "Active";
-    }
     return company.decision === "Yes" ? "Archived" : "Active";
   };
 
@@ -119,9 +127,6 @@ export default function Dashboard() {
   };
 
   const isCompanyArchived = (company: Company) => {
-    if (companyStatuses.hasOwnProperty(company.id)) {
-      return companyStatuses[company.id];
-    }
     return company.decision === "Yes";
   };
 
@@ -132,17 +137,63 @@ export default function Dashboard() {
   });
 
   // Further filter active companies based on search term and status
-  const filteredCompanies = activeCompanies.filter((company: Company) => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.website.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCompanies = (() => {
+    let filtered = activeCompanies.filter((company: Company) => {
+      const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           company.website.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (filterStatus === "all" || filterStatus === "date-newest" || filterStatus === "date-oldest") return matchesSearch;
+      if (filterStatus === "responded") return matchesSearch && company.hasResponded;
+      if (filterStatus === "not-responded") return matchesSearch && !company.hasResponded;
+      if (filterStatus === "attempts-left") return matchesSearch && company.totalEmails < 3;
+      
+      return matchesSearch;
+    });
+
+    // Apply date sorting if selected
+    if (filterStatus === "date-newest") {
+      filtered = filtered.sort((a, b) => new Date(b.lastAttempt || '1970-01-01').getTime() - new Date(a.lastAttempt || '1970-01-01').getTime());
+    } else if (filterStatus === "date-oldest") {
+      filtered = filtered.sort((a, b) => new Date(a.lastAttempt || '1970-01-01').getTime() - new Date(b.lastAttempt || '1970-01-01').getTime());
+    }
+
+    return filtered;
+  })();
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCompanies = filteredCompanies.slice(startIndex, endIndex);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, filterStatus, totalPages, currentPage]);
+
+  // Scroll to top when page changes (but not on initial load)
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
     
-    if (filterStatus === "all") return matchesSearch;
-    if (filterStatus === "responded") return matchesSearch && company.hasResponded;
-    if (filterStatus === "not-responded") return matchesSearch && !company.hasResponded;
-    if (filterStatus === "attempts-left") return matchesSearch && company.totalEmails < 3;
-    
-    return matchesSearch;
-  });
+    // Scroll to top with a small delay to ensure DOM updates are complete
+    setTimeout(() => {
+      // Find the scrollable main element and scroll it to top
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Fallback to window scroll
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 50);
+  }, [currentPage]);
 
   if (isLoadingCompanies || isLoadingStats) {
     return (
@@ -282,13 +333,15 @@ export default function Dashboard() {
                 <SelectItem value="responded">Responded</SelectItem>
                 <SelectItem value="not-responded">Not Responded</SelectItem>
                 <SelectItem value="attempts-left">Attempts Left</SelectItem>
+                <SelectItem value="date-newest">Sort By Date (Newest)</SelectItem>
+                <SelectItem value="date-oldest">Sort By Date (Oldest)</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           {/* Add Company Button */}
-          <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company" size="sm" className="h-10 flex-shrink-0 text-xs lg:text-sm px-2 lg:px-3">
-            <Plus className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-2" />
+          <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company" size="sm" className="h-10 flex-shrink-0 text-xs lg:text-sm px-1.5 lg:px-2">
+            <Plus className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-1.5" />
             <span className="hidden sm:inline">Add Company</span>
             <span className="sm:hidden">Add</span>
           </Button>
@@ -313,7 +366,7 @@ export default function Dashboard() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredCompanies.map((company: Company, index: number) => {
+          {paginatedCompanies.map((company: Company, index: number) => {
             const isExpanded = expandedCompanies.has(company.id);
             const latestData = getLatestAttemptData(company);
             const attempts = getCompanyAttempts(company.id);
@@ -709,6 +762,52 @@ export default function Dashboard() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredCompanies.length > 0 && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+          
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(page)}
+                className="w-10"
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Page Info */}
+      {filteredCompanies.length > 0 && (
+        <div className="flex justify-center text-sm text-muted-foreground mt-4">
+          Showing {startIndex + 1}-{Math.min(endIndex, filteredCompanies.length)} of {filteredCompanies.length} companies
         </div>
       )}
 
