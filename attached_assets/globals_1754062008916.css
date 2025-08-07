@@ -126,16 +126,33 @@
     @apply border-border outline-ring/50;
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
+    transition-duration: 100ms;
+  }
+  
+  /* Theme switching classes */
+  .disable-all-transitions,
+  .disable-all-transitions * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .theme-fade-in,
+  .theme-fade-in * {
+    animation: theme-fade 300ms ease-out;
+  }
+  
+  @keyframes theme-fade {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
   }
 
   body {
     @apply bg-background text-foreground;
-    transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+    transition: background-color 100ms ease-in-out, color 100ms ease-in-out;
   }
 
   html {
-    transition: color-scheme 300ms ease-in-out;
+    transition: color-scheme 100ms ease-in-out;
   }
 
   html.dark {
@@ -210,11 +227,11 @@ html {
 @layer base {
   .recharts-cartesian-grid line,
   .recharts-reference-line line {
-    transition: stroke 300ms ease-in-out;
+    transition: stroke 100ms ease-in-out;
   }
   
   .recharts-tooltip-wrapper {
-    transition: all 300ms ease-in-out;
+    transition: all 100ms ease-in-out;
   }
 }
 

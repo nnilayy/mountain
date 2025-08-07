@@ -49,7 +49,7 @@ export function QuickThemeToggle() {
     <div className="theme-toggle-container relative flex items-center bg-gray-200 dark:bg-gray-800 rounded-lg p-1 overflow-hidden">
       {/* Sliding background indicator */}
       <div 
-        className={`theme-toggle-slider absolute top-1 bottom-1 rounded-md shadow-sm transition-all duration-200 ease-out ${
+        className={`theme-toggle-slider absolute top-1 bottom-1 rounded-md shadow-sm transition-all duration-80 ease-out ${
           actualTheme === 'light' 
             ? 'bg-gray-800 dark:bg-gray-800 left-1 right-[40%]' 
             : 'bg-gray-200 dark:bg-gray-200 left-[50%] right-1'
@@ -60,14 +60,14 @@ export function QuickThemeToggle() {
         variant="ghost"
         size="sm"
         onClick={() => setTheme('light')}
-        className={`relative z-10 flex items-center justify-center gap-1.5 px-2 py-2 h-auto text-xs border-0 shadow-none hover:bg-transparent transition-colors duration-150 ${
+        className={`relative z-10 flex items-center justify-center gap-1.5 px-2 py-2 h-auto text-xs border-0 shadow-none hover:bg-transparent transition-colors duration-80 ${
           actualTheme === 'light' 
             ? 'text-white font-medium' 
             : 'text-muted-foreground hover:text-foreground'
         } flex-[1]`}
         data-testid="button-theme-light"
       >
-        <Sun className={`h-3.5 w-3.5 transition-transform duration-150 ${
+        <Sun className={`h-3.5 w-3.5 transition-transform duration-80 ${
           actualTheme === 'light' ? 'scale-110' : 'scale-100'
         }`} />
         Light
@@ -77,14 +77,14 @@ export function QuickThemeToggle() {
         variant="ghost"
         size="sm"
         onClick={() => setTheme('dark')}
-        className={`relative z-10 flex items-center justify-center gap-1.5 px-2 py-2 h-auto text-xs border-0 shadow-none hover:bg-transparent transition-colors duration-150 ${
+        className={`relative z-10 flex items-center justify-center gap-1.5 px-2 py-2 h-auto text-xs border-0 shadow-none hover:bg-transparent transition-colors duration-80 ${
           actualTheme === 'dark' 
             ? 'text-black font-medium' 
             : 'text-muted-foreground hover:text-foreground'
         } flex-[1]`}
         data-testid="button-theme-dark"
       >
-        <Moon className={`h-3.5 w-3.5 transition-transform duration-150 ${
+        <Moon className={`h-3.5 w-3.5 transition-transform duration-80 ${
           actualTheme === 'dark' ? 'scale-110' : 'scale-100'
         }`} />
         Dark
@@ -102,7 +102,7 @@ export function SidebarThemeToggle({ expanded }: { expanded: boolean }) {
         <Button
           variant="ghost"
           onClick={() => setTheme(actualTheme === 'light' ? 'dark' : 'light')}
-          className={`w-10 h-10 flex justify-center items-center p-0 rounded-lg sidebar-collapsed-button transition-colors duration-150 ${
+          className={`w-10 h-10 flex justify-center items-center p-0 rounded-lg sidebar-collapsed-button transition-colors duration-80 ${
             actualTheme === 'light' 
               ? 'bg-gray-800 text-white hover:bg-gray-700' 
               : 'bg-gray-200 text-black hover:bg-gray-300'

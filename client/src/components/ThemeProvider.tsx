@@ -44,9 +44,29 @@ export function ThemeProvider({
       
       setActualTheme(resolvedTheme);
       
-      // Instantly switch theme without transitions
+      // Two-phase theme switching for smooth transition
+      
+      // Phase 1: Instantly apply theme without transitions
+      root.classList.add('disable-all-transitions');
+      
+      // Force a reflow to ensure transitions are disabled
+      window.getComputedStyle(root).getPropertyValue('opacity');
+      
+      // Apply the theme change instantly
       root.classList.remove('light', 'dark');
       root.classList.add(resolvedTheme);
+      
+      // Force another reflow to ensure theme is applied
+      window.getComputedStyle(root).getPropertyValue('opacity');
+      
+      // Phase 2: Remove the transition disabler and add fade-in effect
+      root.classList.remove('disable-all-transitions');
+      root.classList.add('theme-fade-in');
+      
+      // Remove the fade-in class after animation completes
+      setTimeout(() => {
+        root.classList.remove('theme-fade-in');
+      }, 150);
     };
 
     updateActualTheme();

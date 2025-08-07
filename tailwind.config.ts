@@ -85,8 +85,9 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       transitionDuration: {
-        DEFAULT: '150ms',
+        DEFAULT: '80ms',
         '75': '75ms',
+        '80': '80ms',
         '100': '100ms',
         '150': '150ms',
         '200': '200ms',

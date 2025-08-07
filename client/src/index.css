@@ -55,15 +55,32 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+  
+  /* Theme switching classes */
+  .disable-all-transitions,
+  .disable-all-transitions * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .theme-fade-in,
+  .theme-fade-in * {
+    animation: theme-fade 150ms ease-out;
+  }
+  
+  @keyframes theme-fade {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
 
-  /* Smooth theme transitions */
+  /* Base transitions - disabled during theme change by the !important above */
   body, 
   [class*="bg-"], 
   [class*="text-"], 
   [class*="border-"] {
-    transition: background-color 150ms ease-out, 
-                color 150ms ease-out, 
-                border-color 150ms ease-out;
+    transition: background-color 80ms ease-out, 
+                color 80ms ease-out, 
+                border-color 80ms ease-out;
   }
 
   html {
@@ -95,16 +112,16 @@
 /* Enhanced Sidebar Animation System */
 .sidebar-collapsed {
   width: 4rem;
-  transition: width 150ms ease-out;
+  transition: width 80ms ease-out;
 }
 
 .sidebar-expanded {
   width: 16rem;
-  transition: width 150ms ease-out;
+  transition: width 80ms ease-out;
 }
 
 .sidebar-text-fade {
-  transition: opacity 150ms ease;
+  transition: opacity 80ms ease;
 }
 
 .sidebar-text-fade-out {
@@ -137,9 +154,9 @@
   position: relative !important;
   display: flex !important;
   align-items: center !important;
-  transition: width 150ms ease-out, 
-              padding 150ms ease-out,
-              justify-content 150ms ease-out !important;
+  transition: width 80ms ease-out, 
+              padding 80ms ease-out,
+              justify-content 80ms ease-out !important;
 }
 
 /* Hover effects for navigation buttons */
