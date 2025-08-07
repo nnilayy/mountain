@@ -275,7 +275,11 @@ export default function Dashboard() {
   const getLatestAttemptData = (company: Company) => {
     // Use the company data directly from API - no complex calculations needed
     const maxAttempts = 3;
-    const currentAttempt = Math.min(company.totalEmails, maxAttempts);
+    // Calculate current attempt based on total emails and people
+    // If we have more emails than people, we're in a follow-up round
+    const currentAttempt = company.totalEmails > 0 
+      ? Math.min(Math.ceil(company.totalEmails / company.totalPeople), maxAttempts)
+      : 0;
     
     return {
       currentAttempt: currentAttempt,

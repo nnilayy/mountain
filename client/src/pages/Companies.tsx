@@ -36,7 +36,13 @@ export default function Companies() {
     if (filterStatus === "all") return matchesSearch;
     if (filterStatus === "responded") return matchesSearch && company.hasResponded;
     if (filterStatus === "not-responded") return matchesSearch && !company.hasResponded;
-    if (filterStatus === "attempts-left") return matchesSearch && company.totalEmails < 3;
+    if (filterStatus === "attempts-left") {
+      // Calculate current attempt to determine if attempts are left
+      const currentAttempt = company.totalEmails > 0 
+        ? Math.min(Math.ceil(company.totalEmails / company.totalPeople), 3)
+        : 0;
+      return matchesSearch && currentAttempt < 3;
+    }
     
     return matchesSearch;
   });
@@ -236,12 +242,19 @@ export default function Companies() {
           {paginatedCompanies.map((company: Company, index: number) => {
             // Helper functions for data extraction (similar to Dashboard)
             const getLatestAttemptData = (company: Company) => {
+              // Calculate current attempt based on total emails and people
+              // If we have more emails than people, we're in a follow-up round
+              // Assuming max 3 attempts per person, calculate which attempt round we're in
+              const currentAttempt = company.totalEmails > 0 
+                ? Math.min(Math.ceil(company.totalEmails / company.totalPeople), 3)
+                : 0;
+              
               return {
-                currentAttempt: company.totalEmails || 0,
+                currentAttempt: currentAttempt,
                 lastSent: company.lastAttempt || 'Never',
                 peopleContacted: company.totalPeople || 0,
-                emailOpened: `${company.openCount || 0}/${company.totalEmails || 0}`,
-                resumeOpened: `${company.clickCount || 0}/${company.totalEmails || 0}`,
+                emailOpened: `${company.openCount || 0}/${company.totalPeople || 0}`,
+                resumeOpened: `${company.clickCount || 0}/${company.totalPeople || 0}`,
               };
             };
 
