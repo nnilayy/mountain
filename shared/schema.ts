@@ -8,6 +8,7 @@ export const companies = pgTable("companies", {
   name: text("name").notNull(),
   website: text("website").notNull(),
   linkedin: text("linkedin"),
+  crunchbase: text("crunchbase"),
   totalEmails: integer("total_emails").notNull().default(0),
   totalPeople: integer("total_people").notNull().default(0),
   lastAttempt: text("last_attempt"),

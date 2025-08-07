@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Search, Plus, ChevronDown, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ export default function Companies() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [companyDecisions, setCompanyDecisions] = useState<{[key: string]: string}>({});
+  const [companyResponses, setCompanyResponses] = useState<{[key: string]: string}>({});
   const itemsPerPage = 10;
 
   const { data: companies = [], isLoading } = useQuery<Company[]>({
@@ -51,20 +54,62 @@ export default function Companies() {
     }
   }, [searchTerm, filterStatus, totalPages, currentPage]);
 
-  // Functions to handle dropdown actions (placeholder implementations)
-  const setCompanyResponse = (companyId: string, response: string) => {
-    // TODO: Implement API call to update company response
-    console.log(`Setting company ${companyId} response to ${response}`);
+  // Scroll to top when page changes (but not on initial load)
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
+    
+    // Scroll to top with a small delay to ensure DOM updates are complete
+    setTimeout(() => {
+      // Find the scrollable main element and scroll it to top
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Fallback to window scroll
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 50);
+  }, [currentPage]);
+
+  // Mutation to update company status
+  const updateCompanyMutation = useMutation({
+    mutationFn: async ({ companyId, decision }: { companyId: string, decision: string }) => {
+      const response = await apiRequest("PATCH", `/api/companies/${companyId}`, { decision });
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch companies to update the UI across all pages
+      queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
+    },
+  });
+
+  // Function to set company status using the backend API
+  const setCompanyStatus = (companyId: string, isArchived: boolean) => {
+    const decision = isArchived ? "Yes" : "No";
+    updateCompanyMutation.mutate({ companyId, decision });
   };
 
+  // Function to set company decision
   const setCompanyDecision = (companyId: string, decision: string) => {
-    // TODO: Implement API call to update company decision
+    setCompanyDecisions(prev => ({
+      ...prev,
+      [companyId]: decision
+    }));
     console.log(`Setting company ${companyId} decision to ${decision}`);
   };
 
-  const setCompanyStatus = (companyId: string, status: string) => {
-    // TODO: Implement API call to update company status
-    console.log(`Setting company ${companyId} status to ${status}`);
+  // Function to set company response
+  const setCompanyResponse = (companyId: string, response: string) => {
+    setCompanyResponses(prev => ({
+      ...prev,
+      [companyId]: response
+    }));
+    console.log(`Setting company ${companyId} response to ${response}`);
   };
 
   const getCompanyStatus = (company: Company) => {
@@ -200,14 +245,25 @@ export default function Companies() {
               };
             };
 
+            // Helper function to get current response
             const getCompanyResponse = (company: Company) => {
+              // Check local state first, otherwise fall back to original response
+              if (companyResponses.hasOwnProperty(company.id)) {
+                return companyResponses[company.id];
+              }
               return company.hasResponded ? "Yes" : "Not Yet";
             };
 
+            // Helper function to get current decision
             const getCompanyDecision = (company: Company) => {
+              // Check local state first, otherwise fall back to original decision
+              if (companyDecisions.hasOwnProperty(company.id)) {
+                return companyDecisions[company.id];
+              }
               return company.decision || "No";
             };
 
+            // Helper function to get current status
             const getCompanyStatus = (company: Company) => {
               return company.decision === "Yes" ? "Archived" : "Active";
             };
@@ -434,7 +490,7 @@ export default function Companies() {
                                 Select Status
                               </div>
                               <DropdownMenuItem 
-                                onClick={() => setCompanyStatus(company.id, "Active")}
+                                onClick={() => setCompanyStatus(company.id, false)}
                                 className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
                               >
                                 <div className="flex items-center gap-2">
@@ -446,15 +502,15 @@ export default function Companies() {
                               </DropdownMenuItem>
                               <div className="h-px bg-border my-1"></div>
                               <DropdownMenuItem 
-                                onClick={() => setCompanyStatus(company.id, "Archived")}
+                                onClick={() => setCompanyStatus(company.id, true)}
                                 className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
                               >
                                 <div className="flex items-center gap-2">
                                   <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-600">
-                                    Archived
+                                    Archive
                                   </div>
                                 </div>
-                                {getCompanyStatus(company) === "Archived" && <Check className="h-3 w-3 text-gray-700 dark:text-gray-100" />}
+                                {isCompanyArchived(company) && <Check className="h-3 w-3 text-gray-700 dark:text-gray-100" />}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
