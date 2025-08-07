@@ -576,7 +576,7 @@ export default function Dashboard() {
                             <DropdownMenuTrigger asChild>
                               <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
                                 isCompanyArchived(company) 
-                                  ? "text-gray-700 bg-gray-100 dark:text-gray-500 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
+                                  ? "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
                                   : "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700"
                               }`}>
                                 {getCompanyStatus(company)}
@@ -603,11 +603,11 @@ export default function Dashboard() {
                                 className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
                               >
                                 <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-600">
                                     Archive
                                   </div>
                                 </div>
-                                {isCompanyArchived(company) && <Check className="h-3 w-3 text-gray-700 dark:text-gray-500" />}
+                                {isCompanyArchived(company) && <Check className="h-3 w-3 text-gray-700 dark:text-gray-100" />}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -639,25 +639,27 @@ export default function Dashboard() {
                   <Collapsible open={isExpanded}>
                     <CollapsibleContent>
                       <div className="border-t bg-gray-100 dark:bg-gray-800">
-                        <div className="py-1 px-2">
-                          {attempts.length === 0 ? (
+                        {attempts.length === 0 ? (
+                          <div className="px-3 py-1.5 lg:px-6 lg:py-1.5">
                             <p className="text-sm text-muted-foreground">No previous attempts recorded</p>
-                          ) : (
-                            <div className="space-y-0">
-                              {attempts.map((attempt, index) => (
-                                <div key={attempt.attemptNumber}>
-                                  {index > 0 && <div className="h-px bg-gray-300 dark:bg-gray-600 my-0.5"></div>}
-                                  <div className="grid grid-cols-11 gap-2 py-1 text-sm">
+                          </div>
+                        ) : (
+                          <div className="space-y-0">
+                            {attempts.map((attempt, index) => (
+                              <div key={attempt.attemptNumber}>
+                                {index > 0 && <div className="h-px bg-gray-300 dark:bg-gray-600"></div>}
+                                <div className="px-3 lg:px-6">
+                                  <div className="grid grid-cols-11 gap-2 items-end text-xs lg:text-sm py-2">
                                     {/* Company Column */}
-                                    <div className="col-span-2 px-2 flex items-center justify-start">
-                                      <div className="font-medium">
+                                    <div className="col-span-2 px-2 flex items-center justify-start h-full">
+                                      <div className="font-semibold text-foreground">
                                         Attempt {attempt.attemptNumber}
                                       </div>
                                     </div>
                                     
                                     {/* Reach Attempt Column */}
                                     <div className="flex flex-col items-center px-2 min-w-[60px]">
-                                      <div className="flex items-center justify-center">
+                                      <div className="font-medium text-center h-6 flex items-center justify-center">
                                         <CircularProgressBlue 
                                           value={attempt.attemptNumber} 
                                           total={3} 
@@ -669,18 +671,18 @@ export default function Dashboard() {
                                     </div>
                                     
                                     {/* Last Sent Column */}
-                                    <div className="flex flex-col items-center justify-center px-2 min-w-[85px]">
-                                      <div className="font-medium text-center text-xs whitespace-nowrap">{formatDateShort(attempt.sentDate)}</div>
+                                    <div className="flex flex-col items-center px-2 min-w-[85px]">
+                                      <div className="font-medium text-center h-6 flex items-center text-xs whitespace-nowrap">{formatDateShort(attempt.sentDate)}</div>
                                     </div>
                                     
                                     {/* People Reached Column */}
-                                    <div className="flex flex-col items-center justify-center px-2 min-w-[60px]">
-                                      <div className="font-medium text-center">{attempt.peopleContacted}</div>
+                                    <div className="flex flex-col items-center px-2 min-w-[60px]">
+                                      <div className="font-medium text-center h-6 flex items-center">{attempt.peopleContacted}</div>
                                     </div>
                                     
                                     {/* Email Opens Column */}
                                     <div className="flex flex-col items-center px-2 min-w-[55px]">
-                                      <div className="flex items-center justify-center">
+                                      <div className="font-medium text-center h-6 flex items-center justify-center">
                                         <CircularProgress 
                                           value={parseInt(attempt.emailOpened.split('/')[0])} 
                                           total={parseInt(attempt.emailOpened.split('/')[1])} 
@@ -693,7 +695,7 @@ export default function Dashboard() {
                                     
                                     {/* Resume Opens Column */}
                                     <div className="flex flex-col items-center px-2 min-w-[55px]">
-                                      <div className="flex items-center justify-center">
+                                      <div className="font-medium text-center h-6 flex items-center justify-center">
                                         <CircularProgress 
                                           value={parseInt(attempt.resumeOpened.split('/')[0])} 
                                           total={parseInt(attempt.resumeOpened.split('/')[1])} 
@@ -706,7 +708,7 @@ export default function Dashboard() {
                                     
                                     {/* Response Received Column */}
                                     <div className="flex flex-col items-center px-2 min-w-[75px]">
-                                      <div className="flex items-center">
+                                      <div className="h-6 flex items-center">
                                         <span className={`font-medium text-xs px-2 py-1 rounded-full border ${
                                           attempt.response === "Yes" 
                                             ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700" 
@@ -721,7 +723,7 @@ export default function Dashboard() {
                                     
                                     {/* Decision Received Column */}
                                     <div className="flex flex-col items-center px-2 min-w-[65px]">
-                                      <div className="flex items-center">
+                                      <div className="h-6 flex items-center">
                                         <span className={`font-medium text-xs px-2 py-1 rounded-full border ${
                                           attempt.decision === "Yes" 
                                             ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700" 
@@ -734,10 +736,10 @@ export default function Dashboard() {
                                     
                                     {/* Status Column */}
                                     <div className="flex flex-col items-center px-2 min-w-[80px]">
-                                      <div className="flex items-center">
+                                      <div className="h-6 flex items-center">
                                         <span className={`font-medium text-xs px-2 py-1 rounded-full border ${
                                           attempt.decision === "Yes" 
-                                            ? "text-gray-700 bg-gray-100 dark:text-gray-500 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
+                                            ? "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
                                             : "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700"
                                         }`}>
                                           {attempt.decision === "Yes" ? "Archived" : "Active"}
@@ -751,10 +753,10 @@ export default function Dashboard() {
                                     </div>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </CollapsibleContent>
                   </Collapsible>

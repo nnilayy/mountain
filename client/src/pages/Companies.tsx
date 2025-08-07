@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, Plus, ChevronDown, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CircularProgress } from "@/components/ui/circular-progress";
+import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
 import AddCompanyModal from "@/components/AddCompanyModal";
 import { Company } from "@shared/schema";
 
@@ -16,6 +19,8 @@ export default function Companies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: companies = [], isLoading } = useQuery<Company[]>({
     queryKey: ["/api/companies"],
@@ -32,6 +37,35 @@ export default function Companies() {
     
     return matchesSearch;
   });
+
+  // Pagination logic from Dashboard
+  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCompanies = filteredCompanies.slice(startIndex, endIndex);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, filterStatus, totalPages, currentPage]);
+
+  // Functions to handle dropdown actions (placeholder implementations)
+  const setCompanyResponse = (companyId: string, response: string) => {
+    // TODO: Implement API call to update company response
+    console.log(`Setting company ${companyId} response to ${response}`);
+  };
+
+  const setCompanyDecision = (companyId: string, decision: string) => {
+    // TODO: Implement API call to update company decision
+    console.log(`Setting company ${companyId} decision to ${decision}`);
+  };
+
+  const setCompanyStatus = (companyId: string, status: string) => {
+    // TODO: Implement API call to update company status
+    console.log(`Setting company ${companyId} status to ${status}`);
+  };
 
   const getCompanyStatus = (company: Company) => {
     if (company.hasResponded) return "Responded";
@@ -95,11 +129,11 @@ export default function Companies() {
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           {/* Company Count */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">Companies:</span>
-            <Badge variant="secondary" className="text-sm">
-              {filteredCompanies.length} {filteredCompanies.length === companies.length ? `of ${companies.length}` : `of ${companies.length} total`}
-            </Badge>
+          <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+            <span className="text-xs lg:text-sm font-medium text-muted-foreground">Companies:</span>
+            <span className="text-xs lg:text-sm font-semibold">
+              {filteredCompanies.length}
+            </span>
           </div>
           
           {/* Search Bar */}
@@ -114,7 +148,9 @@ export default function Companies() {
               data-testid="input-search"
             />
           </div>
-          
+        </div>
+        
+        <div className="flex items-center gap-4">
           {/* Filters */}
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-48" data-testid="select-filter">
@@ -127,13 +163,14 @@ export default function Companies() {
               <SelectItem value="attempts-left">Attempts Left</SelectItem>
             </SelectContent>
           </Select>
+          
+          {/* Add Company Button */}
+          <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company" size="sm" className="h-10 flex-shrink-0 text-xs lg:text-sm px-1.5 lg:px-2">
+            <Plus className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-1.5" />
+            <span className="hidden sm:inline">Add Company</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
         </div>
-        
-        {/* Add Company Button */}
-        <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Company
-        </Button>
       </div>
 
       {/* Company Cards Grid */}
@@ -151,155 +188,330 @@ export default function Companies() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredCompanies.map((company: Company, index: number) => {
-            const status = getCompanyStatus(company);
-            const progress = Math.min((company.totalEmails / 3) * 100, 100);
-            const isExpanded = expandedCompanies.has(company.id);
+          {paginatedCompanies.map((company: Company, index: number) => {
+            // Helper functions for data extraction (similar to Dashboard)
+            const getLatestAttemptData = (company: Company) => {
+              return {
+                currentAttempt: company.totalEmails || 0,
+                lastSent: company.lastAttempt || 'Never',
+                peopleContacted: company.totalPeople || 0,
+                emailOpened: `${company.openCount || 0}/${company.totalEmails || 0}`,
+                resumeOpened: `${company.clickCount || 0}/${company.totalEmails || 0}`,
+              };
+            };
+
+            const getCompanyResponse = (company: Company) => {
+              return company.hasResponded ? "Yes" : "Not Yet";
+            };
+
+            const getCompanyDecision = (company: Company) => {
+              return company.decision || "No";
+            };
+
+            const getCompanyStatus = (company: Company) => {
+              return company.decision === "Yes" ? "Archived" : "Active";
+            };
+
+            const isCompanyArchived = (company: Company) => {
+              return company.decision === "Yes";
+            };
+
+            const latestData = getLatestAttemptData(company);
             
             return (
-              <Card key={company.id} className={`${getStatusColor(status)} overflow-hidden`}>
+              <Card key={company.id} className="overflow-hidden">
                 <CardContent className="p-0">
-                  {/* Main Company Row */}
-                  <div className="px-6 py-4 bg-card">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-start justify-between flex-1">
-                        <div>
-                          <h3 className="text-lg font-semibold" data-testid={`text-company-${index}`}>
+                  {/* Main Company Row - Same as Dashboard */}
+                  <div className="px-3 py-3 lg:px-6 lg:py-4 bg-card">
+                    <div className="grid grid-cols-10 gap-2 items-end text-xs lg:text-sm">
+                      {/* Company Column */}
+                      <div className="col-span-2 px-2 flex items-center justify-start h-full">
+                        <div className="flex flex-col">
+                          <div className="font-semibold text-foreground truncate" data-testid={`text-company-name-${index}`}>
                             {company.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">{company.website}</p>
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">{company.website}</div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {status !== "Not Started" && (
-                            <Badge 
-                              className={
-                                status === "Responded" 
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-                              }
-                            >
-                              {status}
-                            </Badge>
-                          )}
-                          <Button
-                            variant="ghost"
+                      </div>
+                      
+                      {/* Reach Attempt Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[60px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Reach</div>
+                          <div>Attempt</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center justify-center">
+                          <CircularProgressBlue 
+                            value={latestData.currentAttempt} 
+                            total={3} 
                             size="sm"
-                            onClick={() => toggleCompanyExpansion(company.id)}
-                            className="h-8 w-8 p-0"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Main Stats Grid - matches the columns exactly */}
-                    <div className="grid grid-cols-4 gap-4 items-end">
-                      {/* Progress bar */}
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Emails Sent</span>
-                          <span data-testid={`text-email-progress-${index}`}>{company.totalEmails} / 3</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all ${getProgressColor(company)}`}
-                            style={{ width: `${progress}%` }}
-                          ></div>
+                            showFraction={true}
+                            showPercentage={false}
+                          />
                         </div>
                       </div>
                       
-                      {/* Opens */}
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground mb-1">Opens</div>
-                        <div className={`text-sm font-medium ${company.openCount > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
-                          {company.openCount > 0 ? `${company.openCount}x` : '0'}
+                      {/* Last Sent Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[85px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Last</div>
+                          <div>Sent</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center text-xs whitespace-nowrap">{latestData.lastSent}</div>
+                      </div>
+                      
+                      {/* People Reached Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[60px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>People</div>
+                          <div>Reached</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.peopleContacted}</div>
+                      </div>
+                      
+                      {/* Email Opens Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[55px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Emails</div>
+                          <div>Opened</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center justify-center">
+                          <CircularProgress 
+                            value={parseInt(latestData.emailOpened.split('/')[0])} 
+                            total={parseInt(latestData.emailOpened.split('/')[1]) || 1} 
+                            size="sm"
+                            showFraction={true}
+                            showPercentage={false}
+                          />
                         </div>
                       </div>
                       
-                      {/* Clicks */}
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground mb-1">Clicks</div>
-                        <div className={`text-sm font-medium ${company.clickCount > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
-                          {company.clickCount > 0 ? `${company.clickCount}x` : '0'}
+                      {/* Resume Opens Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[55px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Resume</div>
+                          <div>Opened</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center justify-center">
+                          <CircularProgress 
+                            value={parseInt(latestData.resumeOpened.split('/')[0])} 
+                            total={parseInt(latestData.resumeOpened.split('/')[1]) || 1} 
+                            size="sm"
+                            showFraction={true}
+                            showPercentage={false}
+                          />
                         </div>
                       </div>
                       
-                      {/* Last Attempt */}
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground mb-1">Last</div>
-                        <div className="text-sm font-medium">{company.lastAttempt || 'Never'}</div>
+                      {/* Response Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[75px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Response</div>
+                          <div>Received</div>
+                        </div>
+                        <div className="h-6 flex items-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
+                                getCompanyResponse(company) === "Yes" 
+                                  ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700" 
+                                  : getCompanyResponse(company) === "No"
+                                  ? "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border-red-300 dark:border-red-700"
+                                  : "text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700"
+                              }`}>
+                                {getCompanyResponse(company)}
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-32 p-1">
+                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border mb-1">
+                                Select Response
+                              </div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyResponse(company.id, "Yes")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
+                                    Yes
+                                  </div>
+                                </div>
+                                {getCompanyResponse(company) === "Yes" && <Check className="h-3 w-3 text-green-700 dark:text-green-300" />}
+                              </DropdownMenuItem>
+                              <div className="h-px bg-border my-1"></div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyResponse(company.id, "Not Yet")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
+                                    Not Yet
+                                  </div>
+                                </div>
+                                {getCompanyResponse(company) === "Not Yet" && <Check className="h-3 w-3 text-yellow-700 dark:text-yellow-300" />}
+                              </DropdownMenuItem>
+                              <div className="h-px bg-border my-1"></div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyResponse(company.id, "No")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
+                                    No
+                                  </div>
+                                </div>
+                                {getCompanyResponse(company) === "No" && <Check className="h-3 w-3 text-red-700 dark:text-red-300" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      
+                      {/* Decision Received Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[65px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Decision</div>
+                          <div>Received</div>
+                        </div>
+                        <div className="h-6 flex items-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
+                                getCompanyDecision(company) === "Yes" 
+                                  ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700" 
+                                  : "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border-red-300 dark:border-red-700"
+                              }`}>
+                                {getCompanyDecision(company)}
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-32 p-1">
+                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border mb-1">
+                                Select Decision
+                              </div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyDecision(company.id, "Yes")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
+                                    Yes
+                                  </div>
+                                </div>
+                                {getCompanyDecision(company) === "Yes" && <Check className="h-3 w-3 text-green-700 dark:text-green-300" />}
+                              </DropdownMenuItem>
+                              <div className="h-px bg-border my-1"></div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyDecision(company.id, "No")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
+                                    No
+                                  </div>
+                                </div>
+                                {getCompanyDecision(company) === "No" && <Check className="h-3 w-3 text-red-700 dark:text-red-300" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      
+                      {/* Status Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[80px]">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap mb-1">Status</div>
+                        <div className="h-6 flex items-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
+                                isCompanyArchived(company) 
+                                  ? "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
+                                  : "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700"
+                              }`}>
+                                {getCompanyStatus(company)}
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-32 p-1">
+                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border mb-1">
+                                Select Status
+                              </div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyStatus(company.id, "Active")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
+                                    Active
+                                  </div>
+                                </div>
+                                {getCompanyStatus(company) === "Active" && <Check className="h-3 w-3 text-green-700 dark:text-green-300" />}
+                              </DropdownMenuItem>
+                              <div className="h-px bg-border my-1"></div>
+                              <DropdownMenuItem 
+                                onClick={() => setCompanyStatus(company.id, "Archived")}
+                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-600">
+                                    Archived
+                                  </div>
+                                </div>
+                                {getCompanyStatus(company) === "Archived" && <Check className="h-3 w-3 text-gray-700 dark:text-gray-100" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Expanded Details with perfect alignment */}
-                  <Collapsible open={isExpanded}>
-                    <CollapsibleContent>
-                      <div className="border-t bg-gray-50 dark:bg-gray-900/50">
-                        <div className="px-6 py-3">
-                          <div className="text-sm font-medium text-muted-foreground mb-2">
-                            Attempt History
-                          </div>
-                          
-                          {/* Mock attempt data that aligns perfectly with main stats */}
-                          <div className="space-y-2">
-                            {company.totalEmails > 0 ? (
-                              [...Array(company.totalEmails)].map((_, attemptIndex) => (
-                                <div key={attemptIndex}>
-                                  {attemptIndex > 0 && <div className="h-px bg-border my-2"></div>}
-                                  <div className="grid grid-cols-4 gap-4 items-center text-sm">
-                                    {/* Progress - matches main grid column 1 */}
-                                    <div>
-                                      <span className="font-medium">Attempt {attemptIndex + 1}</span>
-                                      <div className="text-xs text-muted-foreground">
-                                        {company.lastAttempt || 'No date'}
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Opens - matches main grid column 2 */}
-                                    <div className="text-center">
-                                      <div className="text-xs font-medium">
-                                        {Math.floor(Math.random() * (company.openCount + 1))}x
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Clicks - matches main grid column 3 */}
-                                    <div className="text-center">
-                                      <div className="text-xs font-medium">
-                                        {Math.floor(Math.random() * (company.clickCount + 1))}x
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Response Status - matches main grid column 4 */}
-                                    <div className="text-center">
-                                      <span className={`text-xs px-2 py-1 rounded-full ${
-                                        company.hasResponded && attemptIndex === company.totalEmails - 1
-                                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                                      }`}>
-                                        {company.hasResponded && attemptIndex === company.totalEmails - 1 ? 'Responded' : 'No Response'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-sm text-muted-foreground py-2">No attempts recorded yet</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
                 </CardContent>
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredCompanies.length > 0 && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+          
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(page)}
+                className="w-10"
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Page Info */}
+      {filteredCompanies.length > 0 && (
+        <div className="flex justify-center text-sm text-muted-foreground mt-4">
+          Showing {startIndex + 1}-{Math.min(endIndex, filteredCompanies.length)} of {filteredCompanies.length} companies
         </div>
       )}
 

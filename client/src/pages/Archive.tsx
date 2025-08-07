@@ -565,7 +565,7 @@ export default function Archive() {
                             <DropdownMenuTrigger asChild>
                               <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
                                 isCompanyArchived(company) 
-                                  ? "text-gray-700 bg-gray-100 dark:text-gray-500 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
+                                  ? "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
                                   : "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700"
                               }`}>
                                 {getCompanyStatus(company)}
@@ -592,11 +592,11 @@ export default function Archive() {
                                 className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
                               >
                                 <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-500 border border-gray-300 dark:border-gray-600">
+                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-600">
                                     Archive
                                   </div>
                                 </div>
-                                {isCompanyArchived(company) && <Check className="h-3 w-3 text-gray-700 dark:text-gray-500" />}
+                                {isCompanyArchived(company) && <Check className="h-3 w-3 text-gray-700 dark:text-gray-100" />}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -726,7 +726,7 @@ export default function Archive() {
                                       <div className="flex items-center">
                                         <span className={`font-medium text-xs px-2 py-1 rounded-full border ${
                                           attempt.decision === "Yes" 
-                                            ? "text-gray-700 bg-gray-100 dark:text-gray-500 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
+                                            ? "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600" 
                                             : "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700"
                                         }`}>
                                           {attempt.decision === "Yes" ? "Archived" : "Active"}
