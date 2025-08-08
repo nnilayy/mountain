@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Search, Plus, ChevronDown, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import AddCompanyModal from "@/components/AddCompanyModal";
 import { Company } from "@shared/schema";
 
 export default function Companies() {
+  const [, setLocation] = useLocation();
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -150,7 +152,7 @@ export default function Companies() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <Skeleton className="h-6 w-24" /> {/* Company count */}
@@ -175,7 +177,7 @@ export default function Companies() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header with company count, search, filters and add button */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -292,15 +294,72 @@ export default function Companies() {
                 <CardContent className="p-0">
                   {/* Main Company Row - Same as Dashboard */}
                   <div className="px-3 py-3 lg:px-6 lg:py-4 bg-card">
-                    <div className="grid grid-cols-10 gap-2 items-end text-xs lg:text-sm">
+                    <div className="grid grid-cols-9 gap-2 items-end text-xs lg:text-sm">
                       {/* Company Column */}
                       <div className="col-span-2 px-2 flex items-center justify-start h-full">
                         <div className="flex flex-col">
                           <div className="font-semibold text-foreground truncate" data-testid={`text-company-name-${index}`}>
                             {company.name}
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">{company.website}</div>
                         </div>
+                      </div>
+                      
+                      {/* Website URL Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[80px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Website</div>
+                          <div>URL</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">
+                          <span className="text-xs truncate max-w-[80px]" title={company.website}>
+                            {company.website}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* LinkedIn URL Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[80px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>LinkedIn</div>
+                          <div>URL</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">
+                          {company.linkedin ? (
+                            <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">in</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Crunchbase URL Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[90px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Crunchbase</div>
+                          <div>URL</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">
+                          {company.crunchbase && company.crunchbase.trim() !== '' ? (
+                            <a href={company.crunchbase} target="_blank" rel="noopener noreferrer">
+                              <svg className="w-5 h-5 cursor-pointer hover:opacity-80" viewBox="0 0 24 24" fill="none">
+                                <rect width="24" height="24" rx="6" fill="#0066CC"/>
+                                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial, sans-serif">cb</text>
+                              </svg>
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* People Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[60px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>People</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">{latestData.peopleContacted}</div>
                       </div>
                       
                       {/* Reach Attempt Column */}
@@ -317,170 +376,6 @@ export default function Companies() {
                             showFraction={true}
                             showPercentage={false}
                           />
-                        </div>
-                      </div>
-                      
-                      {/* Last Sent Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[85px]">
-                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
-                          <div>Last</div>
-                          <div>Sent</div>
-                        </div>
-                        <div className="font-medium text-center h-6 flex items-center text-xs whitespace-nowrap">{latestData.lastSent}</div>
-                      </div>
-                      
-                      {/* People Reached Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[60px]">
-                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
-                          <div>People</div>
-                          <div>Reached</div>
-                        </div>
-                        <div className="font-medium text-center h-6 flex items-center">{latestData.peopleContacted}</div>
-                      </div>
-                      
-                      {/* Email Opens Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[55px]">
-                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
-                          <div>Emails</div>
-                          <div>Opened</div>
-                        </div>
-                        <div className="font-medium text-center h-6 flex items-center justify-center">
-                          <CircularProgress 
-                            value={parseInt(latestData.emailOpened.split('/')[0])} 
-                            total={parseInt(latestData.emailOpened.split('/')[1]) || 1} 
-                            size="sm"
-                            showFraction={true}
-                            showPercentage={false}
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Resume Opens Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[55px]">
-                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
-                          <div>Resume</div>
-                          <div>Opened</div>
-                        </div>
-                        <div className="font-medium text-center h-6 flex items-center justify-center">
-                          <CircularProgress 
-                            value={parseInt(latestData.resumeOpened.split('/')[0])} 
-                            total={parseInt(latestData.resumeOpened.split('/')[1]) || 1} 
-                            size="sm"
-                            showFraction={true}
-                            showPercentage={false}
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Response Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[75px]">
-                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
-                          <div>Response</div>
-                          <div>Received</div>
-                        </div>
-                        <div className="h-6 flex items-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
-                                getCompanyResponse(company) === "Yes" 
-                                  ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700" 
-                                  : getCompanyResponse(company) === "No"
-                                  ? "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border-red-300 dark:border-red-700"
-                                  : "text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700"
-                              }`}>
-                                {getCompanyResponse(company)}
-                              </span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-32 p-1">
-                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border mb-1">
-                                Select Response
-                              </div>
-                              <DropdownMenuItem 
-                                onClick={() => setCompanyResponse(company.id, "Yes")}
-                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
-                                    Yes
-                                  </div>
-                                </div>
-                                {getCompanyResponse(company) === "Yes" && <Check className="h-3 w-3 text-green-700 dark:text-green-300" />}
-                              </DropdownMenuItem>
-                              <div className="h-px bg-border my-1"></div>
-                              <DropdownMenuItem 
-                                onClick={() => setCompanyResponse(company.id, "Not Yet")}
-                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
-                                    Not Yet
-                                  </div>
-                                </div>
-                                {getCompanyResponse(company) === "Not Yet" && <Check className="h-3 w-3 text-yellow-700 dark:text-yellow-300" />}
-                              </DropdownMenuItem>
-                              <div className="h-px bg-border my-1"></div>
-                              <DropdownMenuItem 
-                                onClick={() => setCompanyResponse(company.id, "No")}
-                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
-                                    No
-                                  </div>
-                                </div>
-                                {getCompanyResponse(company) === "No" && <Check className="h-3 w-3 text-red-700 dark:text-red-300" />}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                      
-                      {/* Decision Received Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[65px]">
-                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
-                          <div>Decision</div>
-                          <div>Received</div>
-                        </div>
-                        <div className="h-6 flex items-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <span className={`font-medium text-xs px-2 py-1 rounded-full border cursor-pointer ${
-                                getCompanyDecision(company) === "Yes" 
-                                  ? "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700" 
-                                  : "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border-red-300 dark:border-red-700"
-                              }`}>
-                                {getCompanyDecision(company)}
-                              </span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-32 p-1">
-                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border mb-1">
-                                Select Decision
-                              </div>
-                              <DropdownMenuItem 
-                                onClick={() => setCompanyDecision(company.id, "Yes")}
-                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
-                                    Yes
-                                  </div>
-                                </div>
-                                {getCompanyDecision(company) === "Yes" && <Check className="h-3 w-3 text-green-700 dark:text-green-300" />}
-                              </DropdownMenuItem>
-                              <div className="h-px bg-border my-1"></div>
-                              <DropdownMenuItem 
-                                onClick={() => setCompanyDecision(company.id, "No")}
-                                className="flex items-center justify-between cursor-pointer px-2 py-1 focus:bg-transparent"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
-                                    No
-                                  </div>
-                                </div>
-                                {getCompanyDecision(company) === "No" && <Check className="h-3 w-3 text-red-700 dark:text-red-300" />}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </div>
                       </div>
                       
@@ -527,6 +422,25 @@ export default function Companies() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                        </div>
+                      </div>
+                      
+                      {/* Details Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[85px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Details</div>
+                        </div>
+                        <div className="h-6 flex items-center">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="h-6 px-3 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white border-0 rounded transition-colors"
+                            onClick={() => {
+                              setLocation(`/company/${company.id}`);
+                            }}
+                          >
+                            Add Data
+                          </Button>
                         </div>
                       </div>
                     </div>

@@ -13,7 +13,6 @@ import { Check } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
-import AddCompanyModal from "@/components/AddCompanyModal";
 import { Company, EmailStat } from "@shared/schema";
 
 interface CompanyAttempt {
@@ -52,7 +51,6 @@ function formatDateShort(dateString: string): string {
 }
 
 export default function Dashboard() {
-  const [showAddModal, setShowAddModal] = useState(false);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -342,13 +340,6 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
           </div>
-          
-          {/* Add Company Button */}
-          <Button onClick={() => setShowAddModal(true)} data-testid="button-add-company" size="sm" className="h-10 flex-shrink-0 text-xs lg:text-sm px-1.5 lg:px-2">
-            <Plus className="w-3 h-3 lg:w-4 lg:h-4 mr-1 lg:mr-1.5" />
-            <span className="hidden sm:inline">Add Company</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
         </div>
       </div>
 
@@ -356,16 +347,9 @@ export default function Dashboard() {
       {filteredCompanies.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              {searchTerm || filterStatus !== "all" ? "No companies match your search criteria" : "No companies added yet"}
+            <p className="text-muted-foreground">
+              {searchTerm || filterStatus !== "all" ? "No companies match your search criteria" : "No companies available"}
             </p>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAddModal(true)} 
-              data-testid="button-add-first-company"
-            >
-              Add Your First Company
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -816,11 +800,6 @@ export default function Dashboard() {
           Showing {startIndex + 1}-{Math.min(endIndex, filteredCompanies.length)} of {filteredCompanies.length} companies
         </div>
       )}
-
-      <AddCompanyModal 
-        open={showAddModal} 
-        onOpenChange={setShowAddModal} 
-      />
     </div>
   );
 }

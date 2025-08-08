@@ -28,6 +28,8 @@ export const people = pgTable("people", {
   email: text("email").notNull(),
   position: text("position"),
   linkedin: text("linkedin"),
+  city: text("city"),
+  country: text("country"),
   attempts: integer("attempts").notNull().default(0),
   lastEmailDate: text("last_email_date"),
   opened: boolean("opened").notNull().default(false),

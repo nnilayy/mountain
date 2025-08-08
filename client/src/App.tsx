@@ -8,6 +8,7 @@ import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Archive from "@/pages/Archive";
 import Companies from "@/pages/Companies";
+import CompanyDetail from "@/pages/CompanyDetail";
 import Analytics from "@/pages/Analytics";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
@@ -19,6 +20,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/archive" component={Archive} />
         <Route path="/companies" component={Companies} />
+        <Route path="/company/:id" component={CompanyDetail} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/profile" component={Profile} />
         <Route component={NotFound} />
