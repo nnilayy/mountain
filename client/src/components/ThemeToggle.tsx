@@ -62,8 +62,8 @@ export function QuickThemeToggle() {
         onClick={() => setTheme('light')}
         className={`relative z-10 flex items-center justify-center gap-1.5 px-2 py-2 h-auto text-xs border-0 shadow-none hover:bg-transparent transition-colors duration-80 ${
           actualTheme === 'light' 
-            ? 'text-white font-medium' 
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'text-white font-medium hover:text-white' 
+            : 'text-muted-foreground hover:text-muted-foreground'
         } flex-[1]`}
         data-testid="button-theme-light"
       >
@@ -79,8 +79,8 @@ export function QuickThemeToggle() {
         onClick={() => setTheme('dark')}
         className={`relative z-10 flex items-center justify-center gap-1.5 px-2 py-2 h-auto text-xs border-0 shadow-none hover:bg-transparent transition-colors duration-80 ${
           actualTheme === 'dark' 
-            ? 'text-black font-medium' 
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'text-black font-medium hover:text-black' 
+            : 'text-muted-foreground hover:text-muted-foreground'
         } flex-[1]`}
         data-testid="button-theme-dark"
       >
@@ -104,8 +104,8 @@ export function SidebarThemeToggle({ expanded }: { expanded: boolean }) {
           onClick={() => setTheme(actualTheme === 'light' ? 'dark' : 'light')}
           className={`w-10 h-10 flex justify-center items-center p-0 rounded-lg sidebar-collapsed-button transition-colors duration-80 ${
             actualTheme === 'light' 
-              ? 'bg-gray-800 text-white hover:bg-gray-700' 
-              : 'bg-gray-200 text-black hover:bg-gray-300'
+              ? 'bg-gray-800 text-white hover:bg-gray-800 hover:text-white' 
+              : 'bg-gray-200 text-black hover:bg-gray-200 hover:text-black'
           }`}
           data-testid="button-toggle-theme-collapsed"
         >

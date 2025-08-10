@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,6 +19,7 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
   const [website, setWebsite] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [crunchbaseUrl, setCrunchbaseUrl] = useState("");
+  const [companySize, setCompanySize] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -33,6 +35,7 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
       toast({
         title: "Success",
         description: "Company created successfully",
+        className: "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100 dark:border-green-400",
       });
       handleClose();
     },
@@ -64,6 +67,7 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
         website,
         linkedin: linkedinUrl,
         crunchbase: crunchbaseUrl,
+        companySize: companySize || null,
         totalEmails: 0,
         totalPeople: 0,
         lastAttempt: null,
@@ -85,6 +89,7 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
     setWebsite("");
     setLinkedinUrl("");
     setCrunchbaseUrl("");
+    setCompanySize("");
     onOpenChange(false);
   };
 
@@ -102,7 +107,7 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-6">
           <div className="space-y-1">
             <Label htmlFor="company-name" className="text-sm font-medium flex items-center gap-2">
               Company Name
@@ -116,6 +121,31 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
               className="h-9"
               data-testid="input-company-name"
             />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="company-size" className="text-sm font-medium flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Company Size
+            </Label>
+            <Select value={companySize} onValueChange={setCompanySize}>
+              <SelectTrigger className="h-9" data-testid="select-company-size">
+                <SelectValue placeholder="Select company size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1–10">1–10</SelectItem>
+                <SelectItem value="11–50">11–50</SelectItem>
+                <SelectItem value="51–100">51–100</SelectItem>
+                <SelectItem value="101–250">101–250</SelectItem>
+                <SelectItem value="251–500">251–500</SelectItem>
+                <SelectItem value="501–1,000">501–1,000</SelectItem>
+                <SelectItem value="1,001–5,000">1,001–5,000</SelectItem>
+                <SelectItem value="5,001–10,000">5,001–10,000</SelectItem>
+                <SelectItem value="10,001+">10,001+</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-1">

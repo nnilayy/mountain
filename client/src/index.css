@@ -370,7 +370,7 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #e5e7eb;
   }
 
   ::-webkit-scrollbar-thumb {
@@ -380,5 +380,19 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: #555;
+  }
+  
+  /* Dark mode scrollbar */
+  .dark ::-webkit-scrollbar-track {
+    background: #1e1b4b;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #1e40af;
+    border-radius: 3px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #1d4ed8;
   }
 }

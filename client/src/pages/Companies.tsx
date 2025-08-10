@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Search, Plus, ChevronDown, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { Search, Plus, ChevronDown, ChevronRight, ChevronLeft, Check, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,34 @@ import { CircularProgress } from "@/components/ui/circular-progress";
 import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
 import AddCompanyModal from "@/components/AddCompanyModal";
 import { Company } from "@shared/schema";
+
+// Component to display people count for a company
+function PeopleCount({ companyId }: { companyId: string }) {
+  const { data: people = [] } = useQuery({
+    queryKey: ["/api/people", companyId],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/people?companyId=${companyId}`);
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+  
+  const count = people.length;
+  return <span>{count}</span>;
+}
+
+// Function to get color styling for company size
+function getCompanySizeColor(size: string | null) {
+  if (!size) return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600";
+  
+  const numericSize = size.includes('+') ? 15000 : parseInt(size.split('–')[0].replace(',', ''));
+  
+  if (numericSize <= 10) return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700";
+  if (numericSize <= 50) return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700";
+  if (numericSize <= 250) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700";
+  if (numericSize <= 1000) return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700";
+  return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700";
+}
 
 export default function Companies() {
   const [, setLocation] = useLocation();
@@ -294,13 +322,26 @@ export default function Companies() {
                 <CardContent className="p-0">
                   {/* Main Company Row - Same as Dashboard */}
                   <div className="px-3 py-3 lg:px-6 lg:py-4 bg-card">
-                    <div className="grid grid-cols-9 gap-2 items-end text-xs lg:text-sm">
+                    <div className="grid grid-cols-10 gap-2 items-end text-xs lg:text-sm">
                       {/* Company Column */}
                       <div className="col-span-2 px-2 flex items-center justify-start h-full">
                         <div className="flex flex-col">
                           <div className="font-semibold text-foreground truncate" data-testid={`text-company-name-${index}`}>
                             {company.name}
                           </div>
+                        </div>
+                      </div>
+                      
+                      {/* Company Size Column */}
+                      <div className="flex flex-col items-center px-2 min-w-[70px]">
+                        <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                          <div>Company</div>
+                          <div>Size</div>
+                        </div>
+                        <div className="font-medium text-center h-6 flex items-center">
+                          <span className={`text-xs px-2 py-1 rounded-full border ${getCompanySizeColor(company.companySize)}`}>
+                            {company.companySize || "Unknown"}
+                          </span>
                         </div>
                       </div>
                       
@@ -311,9 +352,9 @@ export default function Companies() {
                           <div>URL</div>
                         </div>
                         <div className="font-medium text-center h-6 flex items-center">
-                          <span className="text-xs truncate max-w-[80px]" title={company.website}>
-                            {company.website}
-                          </span>
+                          <a href={company.website} target="_blank" rel="noopener noreferrer" title={company.website}>
+                            <Globe className="w-5 h-5 text-blue-600 hover:text-blue-800 cursor-pointer" />
+                          </a>
                         </div>
                       </div>
                       
@@ -359,7 +400,9 @@ export default function Companies() {
                         <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
                           <div>People</div>
                         </div>
-                        <div className="font-medium text-center h-6 flex items-center">{latestData.peopleContacted}</div>
+                        <div className="font-medium text-center h-6 flex items-center">
+                          <PeopleCount companyId={company.id} />
+                        </div>
                       </div>
                       
                       {/* Reach Attempt Column */}

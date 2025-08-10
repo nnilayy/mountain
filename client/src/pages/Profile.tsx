@@ -13,6 +13,7 @@ export default function Profile() {
     toast({
       title: "Profile Updated",
       description: "Your profile has been updated successfully.",
+      className: "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100 dark:border-green-400",
     });
   };
 
@@ -20,6 +21,7 @@ export default function Profile() {
     toast({
       title: "Export Started",
       description: "Your data export has been initiated. You'll receive an email when it's ready.",
+      className: "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 dark:border-blue-400",
     });
   };
 
