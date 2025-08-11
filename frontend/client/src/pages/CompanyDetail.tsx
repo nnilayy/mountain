@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, ExternalLink, Plus, Trash2, Linkedin, MoreVertical, Edit, Edit2, UserX, Upload, Eye, Calendar, Target, Mail, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Users, TrendingUp, Check, Info } from "lucide-react";
+import { ArrowLeft, ExternalLink, Plus, Trash2, Linkedin, MoreVertical, Edit, Edit2, UserX, Upload, Eye, Calendar, Target, Mail, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Users, TrendingUp, Check, Info, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -18,22 +18,52 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
 import { toast } from "@/hooks/use-toast";
 import { Company } from "@shared/schema";
+import { format } from "date-fns";
+
+// Company size constants for consistency across the application
+export const COMPANY_SIZE_OPTIONS = [
+  "1–10",
+  "11–50", 
+  "51–100",
+  "101–250",
+  "251–500",
+  "501–1,000",
+  "1,001–5,000",
+  "5,001–10,000",
+  "10,001+"
+] as const;
+
+export type CompanySize = typeof COMPANY_SIZE_OPTIONS[number];
 
 function getCompanySizeColor(size: string | null) {
   if (!size) return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700";
   
-  // Extract numeric value for comparison
-  const numericSize = parseInt(size.replace(/[^\d]/g, "")) || 0;
-  
-  if (numericSize <= 10) return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700";
-  if (numericSize <= 50) return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700";
-  if (numericSize <= 250) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700";
-  if (numericSize <= 1000) return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700";
-  return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700";
+  // Define standard company size ranges and their colors
+  switch (size) {
+    case "1–10":
+      return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700";
+    case "11–50":
+      return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700";
+    case "51–100":
+    case "101–250":
+      return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700";
+    case "251–500":
+    case "501–1,000":
+      return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700";
+    case "1,001–5,000":
+    case "5,001–10,000":
+    case "10,001+":
+      return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700";
+    default:
+      // Fallback for any legacy/unknown values
+      return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700";
+  }
 }
 
 export default function CompanyDetail() {
@@ -98,6 +128,25 @@ export default function CompanyDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Update schedule confirmation dialog
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
+
+  const [calendarModal, setCalendarModal] = useState<{
+    isOpen: boolean;
+    personId: string;
+    personName: string;
+    emailType: 'firstEmail' | 'secondEmail' | 'thirdEmail';
+    currentDate: Date;
+    viewingDate: Date; // Separate date for calendar navigation
+  }>({
+    isOpen: false,
+    personId: "",
+    personName: "",
+    emailType: "firstEmail",
+    currentDate: new Date(),
+    viewingDate: new Date()
+  });
   
   // Info popup states
   const [emailViewsModal, setEmailViewsModal] = useState<{ isOpen: boolean; personId: string; personName: string }>({ isOpen: false, personId: "", personName: "" });
@@ -573,6 +622,120 @@ export default function CompanyDetail() {
     return newDate;
   };
 
+  // Update scheduled date function
+  const updateScheduledDate = (newDate: Date) => {
+    const formattedDate = format(newDate, 'MMM d, yyyy');
+    setScheduledDates(prev => ({
+      ...prev,
+      [calendarModal.personId]: {
+        ...prev[calendarModal.personId],
+        [calendarModal.emailType]: formattedDate
+      }
+    }));
+    
+    // Show success toast
+    const emailNumber = calendarModal.emailType === 'firstEmail' ? 'First' : calendarModal.emailType === 'secondEmail' ? 'Second' : 'Third';
+    toast({
+      title: "Schedule Updated",
+      description: `${emailNumber} email schedule updated to ${formattedDate}`,
+      className: "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100 dark:border-green-400",
+    });
+    
+    // Close calendar modal
+    setCalendarModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // Helper function to get events for a specific date
+  const getEventsForDate = (date: Date) => {
+    const events = [];
+    const dayOfWeek = date.getDay();
+    
+    // Add weekend events
+    if (dayOfWeek === 0) {
+      events.push({ type: 'holiday', title: 'Sunday', color: 'text-blue-600' });
+    } else if (dayOfWeek === 6) {
+      events.push({ type: 'holiday', title: 'Saturday', color: 'text-blue-600' });
+    }
+    
+    return events;
+  };
+
+  // Get events for the current month
+  const getMonthEvents = (date: Date) => {
+    const events = [];
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(year, month, day);
+      const dayOfWeek = currentDate.getDay();
+      
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        events.push({
+          date: day,
+          title: dayOfWeek === 0 ? 'Sunday' : 'Saturday',
+          type: 'holiday',
+          color: 'text-blue-600'
+        });
+      }
+    }
+    
+    return events;
+  };
+
+  // Clickable Date component
+  const ClickableDate = ({ 
+    personId, 
+    personName,
+    emailType, 
+    date, 
+    isScheduled 
+  }: { 
+    personId: string; 
+    personName: string;
+    emailType: 'firstEmail' | 'secondEmail' | 'thirdEmail'; 
+    date: string; 
+    isScheduled: boolean;
+  }) => {
+    if (!isScheduled) {
+      return <span className="text-muted-foreground">-</span>;
+    }
+
+    const handleDateClick = () => {
+      // Parse the current date or use today's date
+      let currentDate = new Date();
+      try {
+        currentDate = new Date(date);
+        if (isNaN(currentDate.getTime())) {
+          currentDate = new Date();
+        }
+      } catch (error) {
+        currentDate = new Date();
+      }
+
+      setCalendarModal({
+        isOpen: true,
+        personId,
+        personName,
+        emailType,
+        currentDate,
+        viewingDate: currentDate // Set viewing date to the current date when opening
+      });
+    };
+
+    return (
+      <Button
+        variant="ghost"
+        className="h-auto p-1 text-sm font-normal hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-pointer"
+        onClick={handleDateClick}
+      >
+        <CalendarDays className="w-3 h-3 mr-1" />
+        {date}
+      </Button>
+    );
+  };
+
   // Get button text based on scheduling status
   const getScheduleButtonText = () => {
     const unscheduledCount = getUnscheduledPeople().length;
@@ -790,7 +953,7 @@ export default function CompanyDetail() {
               ) : (
                 <div className="space-y-4">
                   {people.map((person) => (
-                    <div key={person.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm dark:hover:shadow-gray-700/25 transition-shadow">
+                    <div key={person.id} className="bg-card rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm dark:hover:shadow-gray-700/25 transition-shadow">
                       <div className="flex items-center justify-between">
                         {/* Left side - Person info */}
                         <div className="flex items-center gap-4 flex-1">
@@ -1078,7 +1241,10 @@ export default function CompanyDetail() {
         <TabsContent value="data" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Data</CardTitle>
+              <div className="flex justify-between items-center py-1.5">
+                <CardTitle>Data</CardTitle>
+                <div></div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Resume Link Section */}
@@ -1367,7 +1533,10 @@ export default function CompanyDetail() {
                 </div>
               )}
               {people.length === 0 && (
-                <CardTitle>Schedules</CardTitle>
+                <div className="flex justify-between items-center py-1.5">
+                  <CardTitle>Schedules</CardTitle>
+                  <div></div>
+                </div>
               )}
             </CardHeader>
             <CardContent>
@@ -1401,7 +1570,7 @@ export default function CompanyDetail() {
                           <TableRow key={person.id}>
                             <TableCell className="w-1/5">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 border border-blue-300 dark:border-blue-600 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 border border-blue-300 dark:border-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-xs font-bold text-blue-700 dark:text-blue-300">
                                     {person.name.charAt(0).toUpperCase()}
                                   </span>
@@ -1416,19 +1585,31 @@ export default function CompanyDetail() {
                               </div>
                             </TableCell>
                             <TableCell className="w-1/5">
-                              <div className="text-sm">
-                                {personStatus.firstEmail === "Scheduled" ? getScheduledDate(person.id, 'firstEmail') : "-"}
-                              </div>
+                              <ClickableDate
+                                personId={person.id}
+                                personName={person.name}
+                                emailType="firstEmail"
+                                date={getScheduledDate(person.id, 'firstEmail')}
+                                isScheduled={personStatus.firstEmail === "Scheduled"}
+                              />
                             </TableCell>
                             <TableCell className="w-1/5">
-                              <div className="text-sm">
-                                {personStatus.secondEmail === "Scheduled" ? getScheduledDate(person.id, 'secondEmail') : "-"}
-                              </div>
+                              <ClickableDate
+                                personId={person.id}
+                                personName={person.name}
+                                emailType="secondEmail"
+                                date={getScheduledDate(person.id, 'secondEmail')}
+                                isScheduled={personStatus.secondEmail === "Scheduled"}
+                              />
                             </TableCell>
                             <TableCell className="w-1/5">
-                              <div className="text-sm">
-                                {personStatus.thirdEmail === "Scheduled" ? getScheduledDate(person.id, 'thirdEmail') : "-"}
-                              </div>
+                              <ClickableDate
+                                personId={person.id}
+                                personName={person.name}
+                                emailType="thirdEmail"
+                                date={getScheduledDate(person.id, 'thirdEmail')}
+                                isScheduled={personStatus.thirdEmail === "Scheduled"}
+                              />
                             </TableCell>
                             <TableCell className="w-1/5 text-center">
                               <Badge variant={
@@ -1455,9 +1636,12 @@ export default function CompanyDetail() {
         <TabsContent value="campaigns" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>
-                Campaigns
-              </CardTitle>
+              <div className="flex justify-between items-center py-1.5">
+                <CardTitle>
+                  Campaigns
+                </CardTitle>
+                <div></div>
+              </div>
             </CardHeader>
             <CardContent>
               {people.length === 0 ? (
@@ -1811,7 +1995,10 @@ export default function CompanyDetail() {
         <TabsContent value="statistics" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Campaign Statistics</CardTitle>
+              <div className="flex justify-between items-center py-1.5">
+                <CardTitle>Campaign Statistics</CardTitle>
+                <div></div>
+              </div>
             </CardHeader>
             <CardContent>
               {people.length === 0 ? (
@@ -1826,6 +2013,7 @@ export default function CompanyDetail() {
                     const isExpanded = expandedPersons[person.id] || false;
                     
                     // Mock attempt data for each person
+                    // Calculate total email and resume views from attempts
                     const attempts = [
                       {
                         attemptNumber: 1,
@@ -1833,7 +2021,10 @@ export default function CompanyDetail() {
                         emailOpened: "5/5",
                         resumeOpened: "3/5",
                         response: "Yes",
-                        decision: "No"
+                        decision: "No",
+                        emailViews: 5,
+                        resumeViews: 3,
+                        sentStatus: "Sent"
                       },
                       {
                         attemptNumber: 2,
@@ -1841,7 +2032,10 @@ export default function CompanyDetail() {
                         emailOpened: "4/5",
                         resumeOpened: "2/5",
                         response: "No",
-                        decision: "No"
+                        decision: "No",
+                        emailViews: 4,
+                        resumeViews: 2,
+                        sentStatus: "Sent"
                       },
                       {
                         attemptNumber: 3,
@@ -1849,9 +2043,15 @@ export default function CompanyDetail() {
                         emailOpened: "3/5",
                         resumeOpened: "1/5",
                         response: "Not Yet",
-                        decision: "No"
+                        decision: "No",
+                        emailViews: 3,
+                        resumeViews: 1,
+                        sentStatus: "Sent"
                       }
                     ];
+                    
+                    const totalEmailViews = attempts.reduce((sum, attempt) => sum + attempt.emailViews, 0);
+                    const totalResumeViews = attempts.reduce((sum, attempt) => sum + attempt.resumeViews, 0);
                     
                     return (
                       <Card key={person.id} className="overflow-hidden">
@@ -1892,6 +2092,36 @@ export default function CompanyDetail() {
                                     showFraction={true}
                                     showPercentage={false}
                                   />
+                                </div>
+                              </div>
+                              
+                              {/* Total Email Views Column */}
+                              <div className="flex-1 flex flex-col items-center px-2">
+                                <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                                  <div>Total Email</div>
+                                  <div>Views</div>
+                                </div>
+                                <div className="font-medium text-center h-6 flex items-center justify-center">
+                                  <span className={`font-medium text-sm ${
+                                    totalEmailViews === 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                                  }`}>
+                                    {totalEmailViews}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Total Resume Views Column */}
+                              <div className="flex-1 flex flex-col items-center px-2">
+                                <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
+                                  <div>Total Resume</div>
+                                  <div>Views</div>
+                                </div>
+                                <div className="font-medium text-center h-6 flex items-center justify-center">
+                                  <span className={`font-medium text-sm ${
+                                    totalResumeViews === 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                                  }`}>
+                                    {totalResumeViews}
+                                  </span>
                                 </div>
                               </div>
                               
@@ -1976,18 +2206,72 @@ export default function CompanyDetail() {
                                   </div>
                                 ) : (
                                   <div className="space-y-0">
+                                    {/* Header Row */}
+                                    <div className="px-3 lg:px-6 border-b border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700">
+                                      <div className="grid grid-cols-7 gap-2 items-center text-xs font-medium py-2 text-muted-foreground">
+                                        {/* Reach Attempt Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Reach</div>
+                                            <div>Attempt</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Scheduled Date Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Scheduled</div>
+                                            <div>Date</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Sent Status Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Sent</div>
+                                            <div>Status</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Email Views Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Email</div>
+                                            <div>Views</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Resume Views Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Resume</div>
+                                            <div>Views</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Response Received Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Response</div>
+                                            <div>Received</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Decision Received Column Header */}
+                                        <div className="flex flex-col items-center px-2">
+                                          <div className="text-center whitespace-nowrap">
+                                            <div>Decision</div>
+                                            <div>Received</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
                                     {attempts.map((attempt, index) => (
                                       <div key={attempt.attemptNumber}>
                                         {index > 0 && <div className="h-px bg-gray-300 dark:bg-gray-600"></div>}
                                         <div className="px-3 lg:px-6">
-                                          <div className="grid grid-cols-8 gap-2 items-end text-xs lg:text-sm py-2">
-                                            {/* Attempt Column */}
-                                            <div className="col-span-2 px-2 flex items-center justify-start h-full">
-                                              <div className="font-semibold text-foreground">
-                                                Attempt {attempt.attemptNumber}
-                                              </div>
-                                            </div>
-                                            
+                                          <div className="grid grid-cols-7 gap-2 items-center text-xs lg:text-sm py-2">
                                             {/* Reach Attempt Column */}
                                             <div className="flex flex-col items-center px-2">
                                               <div className="font-medium text-center h-6 flex items-center justify-center">
@@ -2001,34 +2285,39 @@ export default function CompanyDetail() {
                                               </div>
                                             </div>
                                             
-                                            {/* Sent Date Column */}
+                                            {/* Scheduled Date Column */}
                                             <div className="flex flex-col items-center px-2">
                                               <div className="font-medium text-center h-6 flex items-center text-xs whitespace-nowrap">{attempt.sentDate}</div>
                                             </div>
                                             
-                                            {/* Email Opens Column */}
+                                            {/* Sent Status Column */}
                                             <div className="flex flex-col items-center px-2">
-                                              <div className="font-medium text-center h-6 flex items-center justify-center">
-                                                <CircularProgress 
-                                                  value={parseInt(attempt.emailOpened.split('/')[0])} 
-                                                  total={parseInt(attempt.emailOpened.split('/')[1])} 
-                                                  size="sm"
-                                                  showFraction={true}
-                                                  showPercentage={false}
-                                                />
+                                              <div className="h-6 flex items-center">
+                                                <span className="font-medium text-xs px-2 py-1 rounded-full border text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border-green-300 dark:border-green-700">
+                                                  {attempt.sentStatus}
+                                                </span>
                                               </div>
                                             </div>
                                             
-                                            {/* Resume Opens Column */}
+                                            {/* Email Views Column */}
                                             <div className="flex flex-col items-center px-2">
                                               <div className="font-medium text-center h-6 flex items-center justify-center">
-                                                <CircularProgress 
-                                                  value={parseInt(attempt.resumeOpened.split('/')[0])} 
-                                                  total={parseInt(attempt.resumeOpened.split('/')[1])} 
-                                                  size="sm"
-                                                  showFraction={true}
-                                                  showPercentage={false}
-                                                />
+                                                <span className={`font-medium text-sm ${
+                                                  attempt.emailViews === 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                                                }`}>
+                                                  {attempt.emailViews}
+                                                </span>
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Resume Views Column */}
+                                            <div className="flex flex-col items-center px-2">
+                                              <div className="font-medium text-center h-6 flex items-center justify-center">
+                                                <span className={`font-medium text-sm ${
+                                                  attempt.resumeViews === 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                                                }`}>
+                                                  {attempt.resumeViews}
+                                                </span>
                                               </div>
                                             </div>
                                             
@@ -2367,15 +2656,11 @@ export default function CompanyDetail() {
                   <SelectValue placeholder="Select company size" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1–10">1–10</SelectItem>
-                  <SelectItem value="11–50">11–50</SelectItem>
-                  <SelectItem value="51–100">51–100</SelectItem>
-                  <SelectItem value="101–250">101–250</SelectItem>
-                  <SelectItem value="251–500">251–500</SelectItem>
-                  <SelectItem value="501–1,000">501–1,000</SelectItem>
-                  <SelectItem value="1,001–5,000">1,001–5,000</SelectItem>
-                  <SelectItem value="5,001–10,000">5,001–10,000</SelectItem>
-                  <SelectItem value="10,001+">10,001+</SelectItem>
+                  {COMPANY_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -2439,7 +2724,8 @@ export default function CompanyDetail() {
                   name: company?.name || "",
                   website: company?.website || "",
                   linkedin: company?.linkedin || "",
-                  crunchbase: company?.crunchbase || ""
+                  crunchbase: company?.crunchbase || "",
+                  companySize: company?.companySize || ""
                 });
               }}
               disabled={editCompanyMutation.isPending}
@@ -2472,6 +2758,405 @@ export default function CompanyDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Big Calendar Modal */}
+      <Dialog 
+        open={calendarModal.isOpen} 
+        onOpenChange={(open) => setCalendarModal(prev => ({ ...prev, isOpen: open }))}
+      >
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="text-xl font-semibold">
+              Schedule {calendarModal.emailType === 'firstEmail' ? 'First' : calendarModal.emailType === 'secondEmail' ? 'Second' : 'Third'} Email - {calendarModal.personName}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-1 min-h-0">
+            {/* Calendar Section */}
+            <div className="flex-1 p-6 flex flex-col">
+              {/* Custom Calendar Header */}
+              <div className="flex items-center justify-between mb-6">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const newDate = new Date(calendarModal.viewingDate);
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    setCalendarModal(prev => ({ ...prev, viewingDate: newDate }));
+                  }}
+                  className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                
+                <div className="flex items-center gap-3">
+                  {/* Month Dropdown */}
+                  <Select
+                    value={calendarModal.viewingDate.getMonth().toString()}
+                    onValueChange={(value) => {
+                      const newDate = new Date(calendarModal.viewingDate);
+                      newDate.setMonth(parseInt(value));
+                      setCalendarModal(prev => ({ ...prev, viewingDate: newDate }));
+                    }}
+                  >
+                    <SelectTrigger className="w-36">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ].map((month, index) => (
+                        <SelectItem key={index} value={index.toString()}>
+                          {month}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Year Dropdown */}
+                  <Select
+                    value={calendarModal.viewingDate.getFullYear().toString()}
+                    onValueChange={(value) => {
+                      const newDate = new Date(calendarModal.viewingDate);
+                      newDate.setFullYear(parseInt(value));
+                      setCalendarModal(prev => ({ ...prev, viewingDate: newDate }));
+                    }}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(() => {
+                        const currentYear = new Date().getFullYear();
+                        const years = [];
+                        // Go back 50 years and forward 50 years from current year
+                        for (let year = currentYear - 50; year <= currentYear + 50; year++) {
+                          years.push(year);
+                        }
+                        return years.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const newDate = new Date(calendarModal.viewingDate);
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    setCalendarModal(prev => ({ ...prev, viewingDate: newDate }));
+                  }}
+                  className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Custom Calendar Grid */}
+              <div className="flex-1 bg-white dark:bg-gray-950 rounded-lg border shadow-sm overflow-hidden flex flex-col">
+                {/* Days of Week Header */}
+                <div className="grid grid-cols-7 border-b bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    <div key={day} className="p-4 text-center font-semibold text-sm text-gray-600 dark:text-gray-400 border-r last:border-r-0">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Days Grid - This should fill remaining space */}
+                <div className="grid grid-cols-7 grid-rows-6 flex-1 h-full">
+                  {(() => {
+                    const year = calendarModal.viewingDate.getFullYear();
+                    const month = calendarModal.viewingDate.getMonth();
+                    const firstDay = new Date(year, month, 1);
+                    const lastDay = new Date(year, month + 1, 0);
+                    const daysInMonth = lastDay.getDate();
+                    const startingDayOfWeek = firstDay.getDay();
+                    
+                    const days = [];
+                    
+                    // Previous month's trailing days
+                    const prevMonth = new Date(year, month - 1, 0);
+                    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                      const day = prevMonth.getDate() - i;
+                      const date = new Date(year, month - 1, day);
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      const cellIndex = startingDayOfWeek - 1 - i;
+                      const isLastRow = cellIndex >= 35; // Last row starts at index 35
+                      days.push(
+                        <button
+                          key={`prev-${day}`}
+                          className={`w-full h-full border-r ${!isLastRow ? 'border-b' : ''} last:border-r-0 p-2 transition-colors flex items-center justify-center text-sm cursor-not-allowed opacity-60 ${
+                            isWeekend 
+                              ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+                              : 'bg-gray-50 dark:bg-gray-950/30 text-gray-400 dark:text-gray-600'
+                          }`}
+                          disabled
+                        >
+                          {day}
+                        </button>
+                      );
+                    }
+                    
+                    // Current month's days
+                    for (let day = 1; day <= daysInMonth; day++) {
+                      const date = new Date(year, month, day);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+                      const isToday = today.getTime() === date.getTime();
+                      const isPastDate = date.getTime() < today.getTime();
+                      // Only show as selected if this date matches the selected date AND we're viewing the same month
+                      const isSelected = calendarModal.currentDate.getFullYear() === year && 
+                                       calendarModal.currentDate.getMonth() === month && 
+                                       calendarModal.currentDate.getDate() === day;
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      const isDisabled = isWeekend || isPastDate;
+                      const cellIndex = startingDayOfWeek + day - 1;
+                      const isLastRow = cellIndex >= 35; // Last row starts at index 35
+                      
+                      days.push(
+                        <button
+                          key={day}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              setCalendarModal(prev => ({ ...prev, currentDate: date }));
+                            }
+                          }}
+                          disabled={isDisabled}
+                          className={`w-full h-full border-r ${!isLastRow ? 'border-b' : ''} last:border-r-0 p-2 transition-colors duration-200 flex items-center justify-center text-sm font-medium ${
+                            isSelected
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : isToday
+                              ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 font-bold border-2 border-blue-500'
+                              : isDisabled
+                              ? (isWeekend 
+                                 ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 cursor-not-allowed opacity-60'
+                                 : 'bg-gray-50 dark:bg-gray-950/30 text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60')
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      );
+                    }
+                    
+                    // Next month's leading days to fill the grid (always show exactly 42 days = 6 rows)
+                    const totalCells = 42;
+                    const remainingCells = totalCells - days.length;
+                    for (let day = 1; day <= remainingCells; day++) {
+                      const date = new Date(year, month + 1, day);
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      const cellIndex = days.length;
+                      const isLastRow = cellIndex >= 35; // Last row starts at index 35
+                      days.push(
+                        <button
+                          key={`next-${day}`}
+                          className={`w-full h-full border-r ${!isLastRow ? 'border-b' : ''} last:border-r-0 p-2 transition-colors flex items-center justify-center text-sm cursor-not-allowed opacity-60 ${
+                            isWeekend 
+                              ? 'bg-blue-50 dark:bg-gray-900 text-blue-700 dark:text-gray-600'
+                              : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-600'
+                          }`}
+                          disabled
+                        >
+                          {day}
+                        </button>
+                      );
+                    }
+                    
+                    return days;
+                  })()}
+                </div>
+              </div>
+            </div>
+            
+            {/* Events Sidebar */}
+            <div className="w-80 border bg-gray-50 dark:bg-gray-900/50 flex flex-col rounded-l-lg pt-6 pb-6">
+              <div className="px-4 pb-4 flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-lg">Events</h3>
+                <p className="text-sm text-muted-foreground">
+                  {format(calendarModal.viewingDate, 'MMMM yyyy')}
+                </p>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 space-y-4">
+                  {/* Details Section */}
+                  <div>
+                    <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+                      Details
+                    </h4>
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-3">
+                      {(() => {
+                        const currentPerson = people.find(p => p.id === calendarModal.personId);
+                        const currentEmailType = calendarModal.emailType;
+                        const currentCampaignIndex = activeCampaign;
+                        
+                        // Get previous campaign schedules for this person
+                        const getPreviousSchedules = () => {
+                          const schedules = [];
+                          const personSchedules = scheduledDates[calendarModal.personId];
+                          
+                          if (!personSchedules) return [];
+                          
+                          if (currentEmailType === 'secondEmail' || currentEmailType === 'thirdEmail') {
+                            if (personSchedules.firstEmail) {
+                              schedules.push(`First Email: ${personSchedules.firstEmail}`);
+                            }
+                          }
+                          
+                          if (currentEmailType === 'thirdEmail') {
+                            if (personSchedules.secondEmail) {
+                              schedules.push(`Second Email: ${personSchedules.secondEmail}`);
+                            }
+                          }
+                          
+                          return schedules;
+                        };
+
+                        return (
+                          <>
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-1">Person</div>
+                              <div className="text-sm font-medium">
+                                {currentPerson ? currentPerson.name : "Unknown"}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-1">Location</div>
+                              <div className="text-sm">
+                                {currentPerson && currentPerson.city && currentPerson.country 
+                                  ? `${currentPerson.city}, ${currentPerson.country}`
+                                  : "Location not specified"
+                                }
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-1">Previous Campaign Schedules</div>
+                              <div className="text-sm">
+                                {(() => {
+                                  const previousSchedules = getPreviousSchedules();
+                                  if (previousSchedules.length === 0) {
+                                    return currentEmailType === 'firstEmail' 
+                                      ? "None (First campaign email)" 
+                                      : "No previous schedules found";
+                                  }
+                                  return (
+                                    <div className="space-y-1">
+                                      {previousSchedules.map((schedule, index) => (
+                                        <div key={index} className="text-xs bg-primary/10 border border-primary/20 p-2 rounded">
+                                          {schedule}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Selected Date Info */}
+                  <div>
+                    <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+                      Selected Date
+                    </h4>
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <div className="font-medium">
+                        {format(calendarModal.currentDate, 'EEEE, MMMM d, yyyy')}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {getEventsForDate(calendarModal.currentDate).length > 0 ? (
+                          getEventsForDate(calendarModal.currentDate).map((event, index) => (
+                            <span key={index} className={event.color}>
+                              {event.title}
+                            </span>
+                          ))
+                        ) : (
+                          "Regular business day"
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+                      Holidays & Weekends
+                    </h4>
+                    <div className="space-y-2">
+                      {getMonthEvents(calendarModal.viewingDate).map((event, index) => (
+                        <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{event.title}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(calendarModal.viewingDate.getFullYear(), calendarModal.viewingDate.getMonth(), event.date), 'MMM d, yyyy')}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground p-3 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="space-y-1">
+                      <div><strong>•</strong> Weekends are marked as holidays. Consider scheduling emails for business days for better engagement.</div>
+                      <div><strong>•</strong> Holidays are marked as per person's location: {(() => {
+                        const currentPerson = people.find(p => p.id === calendarModal.personId);
+                        return currentPerson && currentPerson.country 
+                          ? currentPerson.country 
+                          : "Country not specified";
+                      })()}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
+            <Button 
+              onClick={() => setShowUpdateConfirm(true)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Update Schedule
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Schedule Confirmation Dialog */}
+      <AlertDialog open={showUpdateConfirm} onOpenChange={setShowUpdateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Schedule Update</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to update the schedule to <strong>{format(calendarModal.currentDate, 'EEEE, MMMM d, yyyy')}</strong>? This will change the scheduled date for this email.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                updateScheduledDate(calendarModal.currentDate);
+                setShowUpdateConfirm(false);
+              }}
+            >
+              Yes, Update Schedule
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

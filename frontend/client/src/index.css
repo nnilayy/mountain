@@ -109,19 +109,20 @@
   }
 }
 
-/* Enhanced Sidebar Animation System */
+/* PHENOMENAL SIDEBAR ANIMATION SYSTEM - REDESIGNED FROM GROUND UP */
 .sidebar-collapsed {
   width: 4rem;
-  transition: width 80ms ease-out;
+  transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-expanded {
   width: 16rem;
-  transition: width 80ms ease-out;
+  transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Text fade animations - immediate disappear, delayed appear */
 .sidebar-text-fade {
-  transition: opacity 80ms ease;
+  transition: opacity 180ms ease;
 }
 
 .sidebar-text-fade-out {
@@ -130,24 +131,52 @@
 
 .sidebar-text-fade-in {
   opacity: 1;
-}
-
-
-
-
-
-/* Remove duplicate sidebar rules */
-
-/* Ensure collapsed state overrides any button width calculations */
-.sidebar-collapsed {
-  contain: layout style !important;
-}
-
-.sidebar-collapsed * {
-  box-sizing: border-box !important;
+  transition-delay: 80ms;
 }
 
 /* Smooth morphing navigation buttons */
+.sidebar-nav-button {
+  transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* OVERRIDE ALL BUTTON STYLES IN COLLAPSED STATE - CLEAN ENFORCEMENT */
+.sidebar-collapsed .sidebar-nav-button,
+.sidebar-collapsed .sidebar-nav-button[data-state="active"],
+.sidebar-collapsed .sidebar-nav-button.bg-gray-800,
+.sidebar-collapsed .sidebar-nav-button.dark\\:bg-gray-200,
+.sidebar-collapsed button[class*="bg-gray"],
+.sidebar-collapsed button[class*="shadow"] {
+  width: 2.5rem !important;
+  min-width: 2.5rem !important;
+  max-width: 2.5rem !important;
+  height: 2.5rem !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+/* Perfect icon centering in collapsed state */
+.sidebar-collapsed .sidebar-nav-icon-container {
+  width: 1rem !important;
+  height: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.sidebar-collapsed .sidebar-nav-button * {
+  margin: 0 !important;
+}
+
+.sidebar-collapsed .sidebar-nav-button svg {
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
 .sidebar-nav-button {
   height: 2.5rem !important;
   margin-bottom: 1rem !important;
