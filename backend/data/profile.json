@@ -1,0 +1,80 @@
+{
+  "profile": {
+    "id": "profile",
+    "profileImage": null,
+    "emailCategories": ["Cold Outreach", "Follow-up", "Networking", "Application"],
+    "resumeCategories": ["Tech Resume", "Executive Resume", "Creative Resume"],
+    "coverLetterCategories": ["Tech Cover Letter", "Executive Cover Letter", "Creative Cover Letter"]
+  },
+  "clientConnections": {
+    "id": "client_connections",
+    "WhatsApp": true,
+    "Signal": false,
+    "Telegram": true,
+    "X": false,
+    "Discord": false,
+    "Mail": true,
+    "Mountains": true
+  },
+  "notificationSettings": {
+    "id": "notification_settings",
+    "WhatsApp": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    },
+    "Signal": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    },
+    "Telegram": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    },
+    "X": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    },
+    "Discord": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    },
+    "Mail": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    },
+    "Mountains": {
+      "emailViews": true,
+      "resumeViews": true,
+      "responses": false
+    }
+  },
+  "emailData": {
+    "id": "email_data",
+    "Cold Outreach": [
+      "Hi [Name], I came across your profile and would love to connect...",
+      "Following up on my previous message about [Topic]...",
+      "I hope this email finds you well. I'm reaching out because..."
+    ],
+    "Follow-up": [
+      "Thank you for taking the time to speak with me yesterday...",
+      "I wanted to follow up on our conversation about [Topic]...",
+      "Just checking in to see if you had any thoughts on..."
+    ],
+    "Networking": [
+      "I'd love to connect and learn more about your experience at [Company]...",
+      "Would you be open to a brief coffee chat to discuss [Industry]?",
+      "I'm always interested in connecting with fellow professionals..."
+    ],
+    "Application": [
+      "I am writing to express my strong interest in the [Position] role...",
+      "I am excited to submit my application for [Position] at [Company]...",
+      "Thank you for considering my application for the [Position] position..."
+    ]
+  }
+}

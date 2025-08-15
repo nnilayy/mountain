@@ -1,0 +1,98 @@
+[
+  {
+    "id": "1",
+    "personId": "1",
+    "companyId": "1",
+    "attemptNumber": 1,
+    "sentDate": "2024-07-28",
+    "openCount": 2,
+    "clickCount": 1,
+    "resumeOpenCount": 1,
+    "responded": false,
+    "subject": "Software Engineer Position - Let's Connect"
+  },
+  {
+    "id": "2",
+    "personId": "1",
+    "companyId": "1",
+    "attemptNumber": 2,
+    "sentDate": "2024-07-31",
+    "openCount": 1,
+    "clickCount": 0,
+    "resumeOpenCount": 1,
+    "responded": false,
+    "subject": "Following Up - Software Engineer Role"
+  },
+  {
+    "id": "3",
+    "personId": "3",
+    "companyId": "550e8400-e29b-41d4-a716-446655440002",
+    "attemptNumber": 1,
+    "sentDate": "2024-07-29",
+    "openCount": 1,
+    "clickCount": 0,
+    "resumeOpenCount": 1,
+    "responded": false,
+    "subject": "Exploring Opportunities at Anthropic"
+  },
+  {
+    "id": "4",
+    "personId": "4",
+    "companyId": "3",
+    "attemptNumber": 1,
+    "sentDate": "2024-07-20",
+    "openCount": 1,
+    "clickCount": 1,
+    "resumeOpenCount": 1,
+    "responded": false,
+    "subject": "Software Engineer - Stripe"
+  },
+  {
+    "id": "5",
+    "personId": "4",
+    "companyId": "3",
+    "attemptNumber": 2,
+    "sentDate": "2024-07-23",
+    "openCount": 1,
+    "clickCount": 1,
+    "resumeOpenCount": 0,
+    "responded": false,
+    "subject": "Re: Software Engineer - Stripe"
+  },
+  {
+    "id": "6",
+    "personId": "4",
+    "companyId": "3",
+    "attemptNumber": 3,
+    "sentDate": "2024-07-25",
+    "openCount": 0,
+    "clickCount": 0,
+    "resumeOpenCount": 0,
+    "responded": true,
+    "subject": "Final Follow-up - Stripe Opportunity"
+  },
+  {
+    "id": "7",
+    "personId": "5",
+    "companyId": "4",
+    "attemptNumber": 1,
+    "sentDate": "2024-08-02",
+    "openCount": 0,
+    "clickCount": 0,
+    "resumeOpenCount": 0,
+    "responded": false,
+    "subject": "Design Engineer Position at Figma"
+  },
+  {
+    "id": "8",
+    "personId": "6",
+    "companyId": "5",
+    "attemptNumber": 1,
+    "sentDate": "2024-08-03",
+    "openCount": 1,
+    "clickCount": 0,
+    "resumeOpenCount": 0,
+    "responded": false,
+    "subject": "Senior Software Engineer - Microsoft"
+  }
+]

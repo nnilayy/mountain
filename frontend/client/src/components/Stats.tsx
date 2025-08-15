@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { Company } from '@shared/schema';
+import { Company } from '@/types/schema';
 
 interface StatsProps {
   companies: Company[];
@@ -111,7 +111,7 @@ export function Stats({ companies, totalEmails, totalOpens, totalClicks, totalRe
                 <Tooltip 
                   formatter={(value, name, props) => [
                     value, 
-                    name.charAt(0).toUpperCase() + name.slice(1)
+                    typeof name === 'string' ? name.charAt(0).toUpperCase() + name.slice(1) : name
                   ]}
                   labelFormatter={(label) => {
                     const company = companyStats.find(c => c.name === label);

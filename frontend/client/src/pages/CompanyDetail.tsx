@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { createApiUrl } from "@/lib/config";
 import { ArrowLeft, ExternalLink, Plus, Trash2, Linkedin, MoreVertical, Edit, Edit2, UserX, Upload, Eye, Calendar, Target, Mail, BarChart3, ChevronLeft, ChevronRight, ChevronDown, Users, TrendingUp, Check, Info, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
 import { toast } from "@/hooks/use-toast";
-import { Company } from "@shared/schema";
+import { Company } from "@/types/schema";
 import { format } from "date-fns";
 
 // Company size constants for consistency across the application
@@ -109,6 +110,54 @@ export default function CompanyDetail() {
   
   // Store persistent dates for scheduled emails
   const [scheduledDates, setScheduledDates] = useState<Record<string, { firstEmail: string; secondEmail: string; thirdEmail: string }>>({});
+  
+  // Scheduling parameters state
+  const [sendHour, setSendHour] = useState(9);
+  const [sendMinute, setSendMinute] = useState(0);
+  const [sendAmPm, setSendAmPm] = useState<'AM' | 'PM'>('AM');
+  const [bufferHours, setBufferHours] = useState(2);
+  
+  // Track if scheduling parameters have changed since last schedule
+  const [hasTimeChanged, setHasTimeChanged] = useState(false);
+  
+  // Holidays state
+  const [holidays, setHolidays] = useState<Array<{
+    date: string;
+    name: string;
+    display_date: string;
+    month: number;
+    day: number;
+  }>>([]);
+  
+  // Temporary time picker state
+  const [tempHour, setTempHour] = useState(9);
+  const [tempMinute, setTempMinute] = useState(0);
+  const [tempAmPm, setTempAmPm] = useState<'AM' | 'PM'>('AM');
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+  
+  // Update time handler
+  const handleUpdateTime = () => {
+    setSendHour(tempHour);
+    setSendMinute(tempMinute);
+    setSendAmPm(tempAmPm);
+    setHasTimeChanged(true); // Mark that time has changed
+    setIsTimePickerOpen(false);
+    
+    // Show success toast
+    toast({
+      title: "Schedule Time Updated",
+      description: `Time set to ${tempHour}:${tempMinute.toString().padStart(2, '0')} ${tempAmPm}`,
+      className: "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100 dark:border-green-400",
+    });
+  };
+  
+  // Reset temp values when opening picker
+  const handleTimePickerOpen = () => {
+    setTempHour(sendHour);
+    setTempMinute(sendMinute);
+    setTempAmPm(sendAmPm);
+    setIsTimePickerOpen(true);
+  };
   
   // Campaign decisions and statuses state
   const [campaignDecisions, setCampaignDecisions] = useState<Record<string, string>>({});
@@ -279,7 +328,8 @@ export default function CompanyDetail() {
       if (!response.ok) {
         throw new Error("Failed to delete company");
       }
-      return response.json();
+      // For 204 No Content, don't try to parse JSON
+      return response.status === 204 ? null : response.json();
     },
     onSuccess: () => {
       // Remove company from cache
@@ -549,30 +599,199 @@ export default function CompanyDetail() {
   };
 
   // Schedule all handler
-  const handleScheduleAll = () => {
-    const updatedStatuses: Record<string, { firstEmail: string; secondEmail: string; thirdEmail: string }> = {};
+  const handleScheduleAll = async () => {
+    const peopleToSchedule = getPeopleNeedingScheduling();
     
-    people.forEach(person => {
-      updatedStatuses[person.id] = {
-        firstEmail: "Scheduled",
-        secondEmail: "Scheduled",
-        thirdEmail: "Scheduled"
+    if (peopleToSchedule.length === 0) {
+      toast({
+        title: "No Action Needed",
+        description: "All people are already scheduled with current time settings",
+        className: "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 dark:border-blue-400",
+      });
+      return;
+    }
+
+    try {
+      // Prepare request data for backend API
+      const scheduleRequest = {
+        people: peopleToSchedule.map(person => ({
+          person_id: person.id,
+          name: person.name,
+          city: person.city || "New York",
+          state: person.state || "NY", 
+          country: person.country || "United States"
+        })),
+        send_hour: sendHour,
+        send_minute: sendMinute,
+        send_am_pm: sendAmPm,
+        buffer_hours: bufferHours,
+        start_date: format(new Date(), 'yyyy-MM-dd')
       };
-    });
-    
-    setEmailStatuses(prev => ({
-      ...prev,
-      ...updatedStatuses
-    }));
-    
-    const unscheduledCount = getUnscheduledPeople().length;
-    const isSchedulingRemaining = unscheduledCount > 0 && unscheduledCount < people.length;
-    
-    toast({
-      title: isSchedulingRemaining ? "Remaining Scheduled" : "All Scheduled",
-      description: `Email schedules created for ${isSchedulingRemaining ? unscheduledCount : people.length} people`,
-      className: "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100 dark:border-green-400",
-    });
+
+      // Call backend API
+      const response = await fetch(createApiUrl('api/schedule'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scheduleRequest)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const scheduleResponse = await response.json();
+
+      // Update states with real scheduled dates from backend
+      const updatedStatuses: Record<string, { firstEmail: string; secondEmail: string; thirdEmail: string }> = {};
+      const updatedDates: Record<string, { firstEmail: string; secondEmail: string; thirdEmail: string }> = {};
+      
+      peopleToSchedule.forEach(person => {
+        const personResult = scheduleResponse.results[person.id];
+        
+        if (personResult && personResult.status === 'success' && personResult.schedule_dates) {
+          // Set status to scheduled
+          updatedStatuses[person.id] = {
+            firstEmail: "Scheduled",
+            secondEmail: "Scheduled", 
+            thirdEmail: "Scheduled"
+          };
+          
+          // Set actual scheduled dates from backend
+          const dates = personResult.schedule_dates;
+          updatedDates[person.id] = {
+            firstEmail: dates[0] ? format(new Date(dates[0]), 'MMM d, yyyy') : "Not scheduled",
+            secondEmail: dates[1] ? format(new Date(dates[1]), 'MMM d, yyyy') : "Not scheduled", 
+            thirdEmail: dates[2] ? format(new Date(dates[2]), 'MMM d, yyyy') : "Not scheduled"
+          };
+        } else {
+          // Handle failed scheduling
+          updatedStatuses[person.id] = {
+            firstEmail: "Failed",
+            secondEmail: "Failed",
+            thirdEmail: "Failed"
+          };
+          updatedDates[person.id] = {
+            firstEmail: "Error",
+            secondEmail: "Error", 
+            thirdEmail: "Error"
+          };
+        }
+      });
+      
+      // Update states
+      setEmailStatuses(prev => ({
+        ...prev,
+        ...updatedStatuses
+      }));
+      
+      setScheduledDates(prev => ({
+        ...prev,
+        ...updatedDates
+      }));
+
+      // Store holidays data by location for person-specific calendar display
+      if (scheduleResponse.holidays && Object.keys(scheduleResponse.holidays).length > 0) {
+        // MERGE with existing data instead of overwriting
+        const existingHolidaysData = (window as any).scheduledHolidaysData || {};
+        const newHolidaysData: { [locationKey: string]: any } = {};
+        
+        Object.entries(scheduleResponse.holidays).forEach(([locationKey, locationData]: [string, any]) => {
+          if (locationData && locationData.holidays) {
+            newHolidaysData[locationKey] = locationData;
+          }
+        });
+        
+        // Merge existing and new holiday data
+        const mergedHolidaysData = { ...existingHolidaysData, ...newHolidaysData };
+        (window as any).scheduledHolidaysData = mergedHolidaysData;
+      }
+
+      // Reset the time changed flag since we've successfully scheduled with current settings
+      setHasTimeChanged(false);
+
+      const successCount = scheduleResponse.summary?.successful_schedules || 0;
+      const failCount = scheduleResponse.summary?.failed_schedules || 0;
+
+      // Collect error details for failed schedules
+      const failedPeople: string[] = [];
+      const errorMessages: string[] = [];
+      
+      if (scheduleResponse.results) {
+        Object.values(scheduleResponse.results).forEach((result: any) => {
+          if (result.status === "error") {
+            failedPeople.push(result.name);
+            errorMessages.push(`${result.name}: ${result.error}`);
+          }
+        });
+      }
+
+      // Determine toast styling based on results
+      const isSuccess = failCount === 0;
+      const title = isSuccess ? "Scheduling Complete" : failCount === people.length ? "Scheduling Failed" : "Scheduling Partially Complete";
+      
+      let description = `${successCount} people scheduled successfully`;
+      if (failCount > 0) {
+        description += `, ${failCount} failed`;
+        if (errorMessages.length > 0) {
+          description += `\n\nErrors:\n${errorMessages.join('\n')}`;
+        }
+      }
+
+      toast({
+        title,
+        description,
+        className: isSuccess 
+          ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100 dark:border-green-400"
+          : "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100 dark:border-red-400",
+      });
+
+    } catch (error) {
+      console.error('Scheduling error:', error);
+      
+      // Extract detailed error information
+      let errorMessage = "Unable to connect to scheduling service. Please try again.";
+      let errorDetails = "";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        errorDetails = error.stack || "";
+        
+        // Parse fetch API error format: "status: response body"
+        const statusMatch = error.message.match(/^(\d+):\s*(.*)$/);
+        if (statusMatch) {
+          const [, status, body] = statusMatch;
+          errorDetails = `Status: ${status}`;
+          
+          // Try to parse JSON error response
+          try {
+            const errorData = JSON.parse(body);
+            errorMessage = errorData.detail || errorData.message || body;
+          } catch {
+            errorMessage = body || `HTTP ${status} Error`;
+          }
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        // Handle other error types
+        const anyError = error as any;
+        if (anyError.message) {
+          errorMessage = anyError.message;
+        } else {
+          errorMessage = JSON.stringify(error);
+        }
+      }
+      
+      console.error('Detailed error:', { errorMessage, errorDetails, fullError: error });
+      
+      toast({
+        title: "Scheduling Failed",
+        description: `${errorMessage}${errorDetails ? ` (${errorDetails})` : ''}`,
+        className: "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100 dark:border-red-400",
+      });
+    }
   };
 
   // Helper function to get unscheduled people
@@ -584,6 +803,16 @@ export default function CompanyDetail() {
         personStatus.secondEmail !== "Scheduled" || 
         personStatus.thirdEmail !== "Scheduled";
     });
+  };
+
+  // Get people who need scheduling (either unscheduled or time changed)
+  const getPeopleNeedingScheduling = () => {
+    if (hasTimeChanged) {
+      // If time changed, all people need rescheduling
+      return people;
+    }
+    // Otherwise, just unscheduled people
+    return getUnscheduledPeople();
   };
 
   // Generate random date for emails
@@ -645,38 +874,102 @@ export default function CompanyDetail() {
     setCalendarModal(prev => ({ ...prev, isOpen: false }));
   };
 
-  // Helper function to get events for a specific date
-  const getEventsForDate = (date: Date) => {
+  // Helper function to get events for a specific date and person
+  const getEventsForDate = (date: Date, personId: string) => {
     const events = [];
     const dayOfWeek = date.getDay();
+    const dateString = format(date, 'yyyy-MM-dd');
     
     // Add weekend events
     if (dayOfWeek === 0) {
-      events.push({ type: 'holiday', title: 'Sunday', color: 'text-blue-600' });
+      events.push({ type: 'weekend', title: 'Sunday', color: 'text-blue-600' });
     } else if (dayOfWeek === 6) {
-      events.push({ type: 'holiday', title: 'Saturday', color: 'text-blue-600' });
+      events.push({ type: 'weekend', title: 'Saturday', color: 'text-blue-600' });
+    }
+    
+    // Add holidays for the specific person
+    const currentPerson = people.find(p => p.id.toString() === personId);
+    if (currentPerson && (window as any).scheduledHolidaysData) {
+      // Use same default logic as scheduling
+      const personData = currentPerson as any;
+      const city = personData.city || "New York";
+      const state = personData.state || "NY";
+      const country = personData.country || "United States";
+      const locationKey = `${city}-${state}-${country}`;
+      
+      const holidaysData = (window as any).scheduledHolidaysData;
+      if (holidaysData[locationKey] && holidaysData[locationKey].holidays) {
+        const personHolidays = holidaysData[locationKey].holidays;
+        const holiday = personHolidays.find((h: any) => h.date === dateString);
+        if (holiday) {
+          events.push({ 
+            type: 'holiday', 
+            title: holiday.name, 
+            color: 'text-orange-600',
+            isHoliday: true
+          });
+        }
+      }
     }
     
     return events;
   };
 
-  // Get events for the current month
-  const getMonthEvents = (date: Date) => {
+  // Get events for the current month for a specific person
+  const getMonthEvents = (date: Date, personId: string) => {
     const events = [];
     const year = date.getFullYear();
     const month = date.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
+    // Get current person data
+    const currentPerson = people.find(p => p.id.toString() === personId);
+    let personHolidays: any[] = [];
+    
+    if (currentPerson && (window as any).scheduledHolidaysData) {
+      // Use same default logic as scheduling
+      const personData = currentPerson as any;
+      const city = personData.city || "New York";
+      const state = personData.state || "NY";
+      const country = personData.country || "United States";
+      const locationKey = `${city}-${state}-${country}`;
+      
+      const holidaysData = (window as any).scheduledHolidaysData;
+      if (holidaysData[locationKey] && holidaysData[locationKey].holidays) {
+        personHolidays = holidaysData[locationKey].holidays;
+      }
+    }
+    
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
       const dayOfWeek = currentDate.getDay();
+      const dateString = format(currentDate, 'yyyy-MM-dd');
       
+      // Add weekends
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         events.push({
           date: day,
           title: dayOfWeek === 0 ? 'Sunday' : 'Saturday',
+          type: 'weekend',
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+          borderColor: 'border-blue-200 dark:border-blue-800',
+          dotColor: 'bg-blue-500'
+        });
+      }
+      
+      // Add holidays for the specific person
+      const holiday = personHolidays.find((h: any) => h.date === dateString);
+      if (holiday) {
+        events.push({
+          date: day,
+          title: holiday.name,
           type: 'holiday',
-          color: 'text-blue-600'
+          color: 'text-orange-600',
+          bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+          borderColor: 'border-orange-200 dark:border-orange-800',
+          dotColor: 'bg-orange-500',
+          displayDate: holiday.display_date
         });
       }
     }
@@ -738,6 +1031,13 @@ export default function CompanyDetail() {
 
   // Get button text based on scheduling status
   const getScheduleButtonText = () => {
+    const peopleNeedingScheduling = getPeopleNeedingScheduling();
+    
+    if (hasTimeChanged) {
+      // If time changed, we need to reschedule everyone
+      return "Reschedule All";
+    }
+    
     const unscheduledCount = getUnscheduledPeople().length;
     if (unscheduledCount === 0) return "All Scheduled";
     if (unscheduledCount === people.length) return "Schedule All";
@@ -798,7 +1098,7 @@ export default function CompanyDetail() {
                     Company Size
                   </div>
                   <div>
-                    <span className={`text-xs px-2 py-1 rounded-full border ${getCompanySizeColor(company.companySize)}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full border whitespace-nowrap ${getCompanySizeColor(company.companySize || null)}`}>
                       {company.companySize || "Unknown"}
                     </span>
                   </div>
@@ -815,10 +1115,10 @@ export default function CompanyDetail() {
                   <div className="font-medium h-6 flex items-center">
                     <span 
                       className="text-sm text-blue-600 cursor-pointer hover:underline break-all truncate" 
-                      onClick={() => openLink(company.website)}
+                      onClick={() => company.website && openLink(company.website)}
                       title={company.website}
                     >
-                      {company.website}
+                      {company.website || 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -1522,14 +1822,134 @@ export default function CompanyDetail() {
               {people.length > 0 && (
                 <div className="flex justify-between items-center">
                   <CardTitle>Schedules</CardTitle>
-                  <Button 
-                    onClick={handleScheduleAll} 
-                    className="gap-2"
-                    disabled={getUnscheduledPeople().length === 0}
-                  >
-                    <Calendar className="w-4 h-4" />
-                    {getScheduleButtonText()}
-                  </Button>
+                  
+                  {/* Scheduling Parameters - aligned to the right */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Schedule Time:</Label>
+                      <Popover open={isTimePickerOpen} onOpenChange={setIsTimePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-24 justify-center font-mono"
+                            onClick={handleTimePickerOpen}
+                          >
+                            {`${sendHour}:${sendMinute.toString().padStart(2, '0')} ${sendAmPm}`}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-4" align="end">
+                          <div className="space-y-4">
+                            <div className="text-center font-medium">Select Time</div>
+                            
+                            {/* Time Display */}
+                            <div className="text-center">
+                              <div className="text-3xl font-mono font-bold">
+                                {`${tempHour}:${tempMinute.toString().padStart(2, '0')} ${tempAmPm}`}
+                              </div>
+                            </div>
+                            
+                            {/* Hour Selection */}
+                            <div className="space-y-2">
+                              <Label className="text-sm">Hour</Label>
+                              <div className="grid grid-cols-4 gap-2">
+                                {[...Array(12)].map((_, i) => {
+                                  const hour = i + 1;
+                                  return (
+                                    <Button
+                                      key={hour}
+                                      variant={tempHour === hour ? "default" : "outline"}
+                                      size="sm"
+                                      className="h-8 w-full p-0"
+                                      onClick={() => setTempHour(hour)}
+                                    >
+                                      {hour}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            
+                            {/* Minute Selection */}
+                            <div className="space-y-2">
+                              <Label className="text-sm">Minutes</Label>
+                              <div className="grid grid-cols-4 gap-2">
+                                {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((minute) => (
+                                  <Button
+                                    key={minute}
+                                    variant={tempMinute === minute ? "default" : "outline"}
+                                    size="sm"
+                                    className="h-8 w-full p-0"
+                                    onClick={() => setTempMinute(minute)}
+                                  >
+                                    {minute.toString().padStart(2, '0')}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            {/* AM/PM Selection */}
+                            <div className="space-y-2">
+                              <Label className="text-sm">Period</Label>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant={tempAmPm === 'AM' ? "default" : "outline"}
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => setTempAmPm('AM')}
+                                >
+                                  AM
+                                </Button>
+                                <Button
+                                  variant={tempAmPm === 'PM' ? "default" : "outline"}
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => setTempAmPm('PM')}
+                                >
+                                  PM
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Update Time Button */}
+                            <div className="pt-2 border-t">
+                              <Button 
+                                onClick={handleUpdateTime}
+                                className="w-full gap-2"
+                                size="sm"
+                              >
+                                <Check className="w-4 h-4" />
+                                Update Time
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Buffer Hours:</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="12"
+                        value={bufferHours}
+                        onChange={(e) => {
+                          setBufferHours(parseInt(e.target.value) || 0);
+                          setHasTimeChanged(true); // Mark that scheduling parameters have changed
+                        }}
+                        className="w-16 text-center"
+                      />
+                    </div>
+                    
+                    <Button 
+                      onClick={handleScheduleAll} 
+                      className="gap-2"
+                      disabled={getPeopleNeedingScheduling().length === 0}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      {getScheduleButtonText()}
+                    </Button>
+                  </div>
                 </div>
               )}
               {people.length === 0 && (
@@ -2916,6 +3336,34 @@ export default function CompanyDetail() {
                                        calendarModal.currentDate.getMonth() === month && 
                                        calendarModal.currentDate.getDate() === day;
                       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      
+                      // Check if this date is a holiday for the current person
+                      const dateString = format(date, 'yyyy-MM-dd');
+                      
+                      // Get current person data
+                      const currentPerson = people.find(p => p.id.toString() === calendarModal.personId);
+                      let isHoliday = false;
+                      let holidayName = '';
+                      
+                      if (currentPerson && (window as any).scheduledHolidaysData) {
+                        // Use same default logic as scheduling
+                        const personData = currentPerson as any;
+                        const city = personData.city || "New York";
+                        const state = personData.state || "NY";
+                        const country = personData.country || "United States";
+                        const locationKey = `${city}-${state}-${country}`;
+                        
+                        const holidaysData = (window as any).scheduledHolidaysData;
+                        if (holidaysData[locationKey] && holidaysData[locationKey].holidays) {
+                          const personHolidays = holidaysData[locationKey].holidays;
+                          const holiday = personHolidays.find((h: any) => h.date === dateString);
+                          if (holiday) {
+                            isHoliday = true;
+                            holidayName = holiday.name;
+                          }
+                        }
+                      }
+                      
                       const isDisabled = isWeekend || isPastDate;
                       const cellIndex = startingDayOfWeek + day - 1;
                       const isLastRow = cellIndex >= 35; // Last row starts at index 35
@@ -2934,6 +3382,8 @@ export default function CompanyDetail() {
                               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                               : isToday
                               ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 font-bold border-2 border-blue-500'
+                              : isHoliday
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 font-medium'
                               : isDisabled
                               ? (isWeekend 
                                  ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 cursor-not-allowed opacity-60'
@@ -3076,8 +3526,8 @@ export default function CompanyDetail() {
                         {format(calendarModal.currentDate, 'EEEE, MMMM d, yyyy')}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
-                        {getEventsForDate(calendarModal.currentDate).length > 0 ? (
-                          getEventsForDate(calendarModal.currentDate).map((event, index) => (
+                        {getEventsForDate(calendarModal.currentDate, calendarModal.personId || '').length > 0 ? (
+                          getEventsForDate(calendarModal.currentDate, calendarModal.personId || '').map((event, index) => (
                             <span key={index} className={event.color}>
                               {event.title}
                             </span>
@@ -3094,13 +3544,13 @@ export default function CompanyDetail() {
                       Holidays & Weekends
                     </h4>
                     <div className="space-y-2">
-                      {getMonthEvents(calendarModal.viewingDate).map((event, index) => (
-                        <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      {getMonthEvents(calendarModal.viewingDate, calendarModal.personId || '').map((event, index) => (
+                        <div key={index} className={`flex items-center gap-3 p-2 rounded-lg ${event.bgColor} border ${event.borderColor}`}>
+                          <div className={`w-2 h-2 rounded-full ${event.dotColor}`}></div>
                           <div className="flex-1">
                             <div className="font-medium text-sm">{event.title}</div>
                             <div className="text-xs text-muted-foreground">
-                              {format(new Date(calendarModal.viewingDate.getFullYear(), calendarModal.viewingDate.getMonth(), event.date), 'MMM d, yyyy')}
+                              {event.displayDate || format(new Date(calendarModal.viewingDate.getFullYear(), calendarModal.viewingDate.getMonth(), event.date), 'MMM d, yyyy')}
                             </div>
                           </div>
                         </div>

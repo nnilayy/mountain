@@ -13,7 +13,7 @@ import { Check } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
-import { Company, EmailStat } from "@shared/schema";
+import { Company, EmailStat } from "@/types/schema";
 
 interface CompanyAttempt {
   attemptNumber: number;
@@ -138,7 +138,7 @@ export default function Dashboard() {
   const filteredCompanies = (() => {
     let filtered = activeCompanies.filter((company: Company) => {
       const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           company.website.toLowerCase().includes(searchTerm.toLowerCase());
+                           (company.website?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
       
       if (filterStatus === "all" || filterStatus === "date-newest" || filterStatus === "date-oldest") return matchesSearch;
       if (filterStatus === "responded") return matchesSearch && company.hasResponded;
@@ -235,39 +235,24 @@ export default function Dashboard() {
   };
 
   const getCompanyAttempts = (companyId: string): CompanyAttempt[] => {
-    const companyStats = emailStats.filter(stat => stat.companyId === companyId);
-    const attemptMap = new Map<number, CompanyAttempt>();
+    // For now, return simplified data since the EmailStat structure has changed
+    // TODO: Update this logic when implementing proper attempt tracking
+    const companyStats = emailStats.filter(stat => stat.personId && stat.personId.includes(companyId));
     
-    companyStats.forEach(stat => {
-      const attempt = attemptMap.get(stat.attemptNumber) || {
-        attemptNumber: stat.attemptNumber,
-        sentDate: stat.sentDate,
-        peopleContacted: 0,
-        emailOpened: "0/0",
-        resumeOpened: "0/0",
-        response: "No",
-        decision: "Pending"
-      };
-      
-      attempt.peopleContacted += 1;
-      const opened = stat.openCount > 0 ? 1 : 0;
-      const resumeOpened = stat.resumeOpenCount > 0 ? 1 : 0;
-      
-      const [currentOpened, totalOpened] = attempt.emailOpened.split('/').map(Number);
-      const [currentResumeOpened, totalResumeOpened] = attempt.resumeOpened.split('/').map(Number);
-      
-      attempt.emailOpened = `${currentOpened + opened}/${totalOpened + 1}`;
-      attempt.resumeOpened = `${currentResumeOpened + resumeOpened}/${totalResumeOpened + 1}`;
-      
-      if (stat.responded) {
-        attempt.response = "Yes";
-        attempt.decision = "Yes"; // This would come from the company data in real implementation
-      }
-      
-      attemptMap.set(stat.attemptNumber, attempt);
-    });
-    
-    return Array.from(attemptMap.values()).sort((a, b) => a.attemptNumber - b.attemptNumber);
+    if (companyStats.length === 0) {
+      return [];
+    }
+
+    // Create a simple attempt based on available data
+    return [{
+      attemptNumber: 1,
+      sentDate: companyStats[0]?.sentAt || new Date().toISOString(),
+      peopleContacted: companyStats.length,
+      emailOpened: `${companyStats.filter(s => s.openedAt).length}/${companyStats.length}`,
+      resumeOpened: `0/${companyStats.length}`, // No resume tracking yet
+      response: companyStats.some(s => s.respondedAt) ? "Yes" : "No",
+      decision: "Pending"
+    }];
   };
 
   const getLatestAttemptData = (company: Company) => {

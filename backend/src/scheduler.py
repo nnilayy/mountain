@@ -3,7 +3,7 @@ import pytz
 import pycountry
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
-from holidays import Holidays
+from .holidays import Holidays
 
 
 class Scheduler:
@@ -57,9 +57,23 @@ class Scheduler:
                            country: str = 'India',
                            start_date_str: str | None = None,
                            send_hour: int = 8,
-                           buffer_hours: int = 2) -> list[str]:
+                           buffer_hours: int = 2) -> dict:
         """Generate the next 3 scheduled dates at send_hour, excluding weekends and holidays."""
-        location_string = ', '.join(filter(None, [city, state, country]))
+        
+        # Location string construction: either city,country OR state,country (never both)
+        if city and city.strip():
+            # Use city, country format
+            location_string = ', '.join(filter(None, [city.strip(), country]))
+        elif state and state.strip():
+            # Use state, country format  
+            location_string = ', '.join(filter(None, [state.strip(), country]))
+        else:
+            # Fallback to just country if neither city nor state provided
+            location_string = country or ""
+            
+        if not location_string.strip():
+            raise ValueError("No valid location provided (city, state, or country)")
+            
         location_data = self.geolocator.geocode(location_string)
         if not location_data:
             raise ValueError(f"Could not find location: {location_string}")
@@ -79,6 +93,7 @@ class Scheduler:
         current_datetime_local = pytz.utc.localize(current_datetime_utc).astimezone(local_timezone)
         
         # Get holidays for the current year using our custom Holidays class
+        # Pass the original country name - the Holidays class handles mapping internally
         current_year = current_datetime_local.year
         holidays_df = self.holidays_client.get_holidays(current_year, countries=country)
         
@@ -123,7 +138,33 @@ class Scheduler:
             else:
                 current_date_object += timedelta(days=1)
 
-        return scheduled_dates
+        # Format holidays data for frontend
+        holidays_list = []
+        if not holidays_df.empty:
+            for _, row in holidays_df.iterrows():
+                try:
+                    holiday_date = datetime.strptime(row['date'], '%Y-%m-%d')
+                    holidays_list.append({
+                        "date": row['date'],  # Keep original YYYY-MM-DD format
+                        "name": row['name'],
+                        "display_date": holiday_date.strftime('%B %d, %Y'),
+                        "month": holiday_date.month,
+                        "day": holiday_date.day
+                    })
+                except Exception as e:
+                    print(f"Error processing holiday {row.get('name', 'Unknown')}: {e}")
+                    continue
+
+        return {
+            "scheduled_dates": scheduled_dates,
+            "holidays": holidays_list,
+            "location": {
+                "city": city,
+                "state": state,
+                "country": country,
+                "timezone": timezone_name
+            }
+        }
 
 
 # Example usage function
@@ -134,9 +175,9 @@ def example_usage():
     # Get email schedule for Mumbai, India
     try:
         schedule = scheduler.get_email_schedule(
-            city="Mumbai",
-            state="Maharashtra", 
-            country="India",
+            city="Ontario",
+            # state="Maharashtra", 
+            country="Canada",
             send_hour=9,
             buffer_hours=2
         )

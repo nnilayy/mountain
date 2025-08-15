@@ -14,7 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { CircularProgressBlue } from "@/components/ui/circular-progress-blue";
 import AddCompanyModal from "@/components/AddCompanyModal";
-import { Company } from "@shared/schema";
+import { Company } from "@/types/schema";
 
 // Component to display people count for a company
 function PeopleCount({ companyId }: { companyId: string }) {
@@ -61,7 +61,7 @@ export default function Companies() {
 
   const filteredCompanies = companies.filter((company: Company) => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.website.toLowerCase().includes(searchTerm.toLowerCase());
+                         (company.website?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     
     if (filterStatus === "all") return matchesSearch;
     if (filterStatus === "responded") return matchesSearch && company.hasResponded;
@@ -333,13 +333,13 @@ export default function Companies() {
                       </div>
                       
                       {/* Company Size Column */}
-                      <div className="flex flex-col items-center px-2 min-w-[70px]">
+                      <div className="flex flex-col items-center px-2 min-w-[120px]">
                         <div className="text-xs text-muted-foreground text-center whitespace-nowrap mb-1">
                           <div>Company</div>
                           <div>Size</div>
                         </div>
                         <div className="font-medium text-center h-6 flex items-center">
-                          <span className={`text-xs px-2 py-1 rounded-full border ${getCompanySizeColor(company.companySize)}`}>
+                          <span className={`text-xs px-2 py-1 rounded-full border whitespace-nowrap ${getCompanySizeColor(company.companySize || null)}`}>
                             {company.companySize || "Unknown"}
                           </span>
                         </div>

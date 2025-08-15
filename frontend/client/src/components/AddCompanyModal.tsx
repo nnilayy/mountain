@@ -61,22 +61,14 @@ export default function AddCompanyModal({ open, onOpenChange }: AddCompanyModalP
     }
 
     try {
-      // Create company
+      // Create company - only send fields that CompanyCreate expects
       await createCompanyMutation.mutateAsync({
         name: companyName,
         website,
         linkedin: linkedinUrl,
         crunchbase: crunchbaseUrl,
         companySize: companySize || null,
-        totalEmails: 0,
-        totalPeople: 0,
         lastAttempt: null,
-        hasOpened: false,
-        openCount: 0,
-        hasClicked: false,
-        clickCount: 0,
-        resumeOpenCount: 0,
-        hasResponded: false,
         decision: null,
       });
     } catch (error) {

@@ -20,12 +20,39 @@ const navigation = [
 export default function Sidebar({ expanded, onToggle }: SidebarProps) {
   const [location] = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   
   useEffect(() => {
     setIsTransitioning(true);
     const timer = setTimeout(() => setIsTransitioning(false), 600);
     return () => clearTimeout(timer);
   }, [expanded]);
+
+  useEffect(() => {
+    // Load profile image from localStorage
+    const savedImage = localStorage.getItem('profileImage');
+    setProfileImage(savedImage);
+
+    // Listen for storage changes to update across tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'profileImage') {
+        setProfileImage(e.newValue);
+      }
+    };
+
+    // Listen for custom event to update within the same session
+    const handleProfileImageChange = (e: CustomEvent) => {
+      setProfileImage(e.detail);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('profileImageChanged', handleProfileImageChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('profileImageChanged', handleProfileImageChange as EventListener);
+    };
+  }, []);
 
   return (
     <div className={cn(
@@ -110,8 +137,16 @@ export default function Sidebar({ expanded, onToggle }: SidebarProps) {
             "flex items-center cursor-pointer sidebar-content-transition",
             expanded ? "p-2 space-x-3 w-full" : "p-2 w-10 h-10 justify-center"
           )}>
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-medium text-primary-foreground">AJ</span>
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {profileImage ? (
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-medium text-primary-foreground">AJ</span>
+              )}
             </div>
             <div className="flex-1 min-w-0 sidebar-text-fade overflow-hidden">
               <div className="text-sm font-medium truncate" data-testid="text-user-name">Alex Johnson</div>

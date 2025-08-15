@@ -17,6 +17,42 @@ class Holidays:
         
         # Mapping for common country name variants to ISO official names
         self.country_name_mappings = {
+            # Common US variations
+            "US": "United States",
+            "USA": "United States",
+            "United States of America": "United States",
+            "America": "United States",
+            
+            # Common UK variations
+            "UK": "United Kingdom",
+            "Great Britain": "United Kingdom",
+            "Britain": "United Kingdom",
+            "England": "United Kingdom",
+            
+            # Common other variations
+            "Germany": "Germany",
+            "DE": "Germany",
+            "Deutschland": "Germany",
+            
+            "India": "India",
+            "IN": "India",
+            
+            "Canada": "Canada",
+            "CA": "Canada",
+            
+            "Australia": "Australia",
+            "AU": "Australia",
+            
+            "France": "France",
+            "FR": "France",
+            
+            "Japan": "Japan",
+            "JP": "Japan",
+            
+            "China": "China",
+            "CN": "China",
+            
+            # Existing mappings
             "Turkey": "Türkiye",
             "South Korea": "Korea, Republic of",
             "North Korea": "Korea, Democratic People's Republic of",
@@ -268,12 +304,12 @@ def example_usage():
     holidays = Holidays()
     
     # Fetch holidays for Malaysia in 2025
-    countries = "Malaysia"
+    countries = "Japan"
     year = 2025
     
     df = holidays.get_holidays(year, countries=countries)
-    print(f"Found {len(df)} holidays for {countries} in {year}")
-    print(df.head())
+    # print(f"Found {len(df)} holidays for {countries} in {year}")
+    print(df)
     
     return df
 
