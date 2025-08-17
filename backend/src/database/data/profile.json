@@ -2,9 +2,22 @@
   "profile": {
     "id": "profile",
     "profileImage": null,
-    "emailCategories": ["Cold Outreach", "Follow-up", "Networking", "Application"],
-    "resumeCategories": ["Tech Resume", "Executive Resume", "Creative Resume"],
-    "coverLetterCategories": ["Tech Cover Letter", "Executive Cover Letter", "Creative Cover Letter"]
+    "emailCategories": [
+      "Cold Outreach",
+      "Follow-up",
+      "Networking",
+      "Application"
+    ],
+    "resumeCategories": [
+      "Tech Resume",
+      "Executive Resume",
+      "Creative Resume"
+    ],
+    "coverLetterCategories": [
+      "Tech Cover Letter",
+      "Executive Cover Letter",
+      "Creative Cover Letter"
+    ]
   },
   "clientConnections": {
     "id": "client_connections",

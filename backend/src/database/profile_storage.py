@@ -4,8 +4,13 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 
 class ProfileStorage:
-    def __init__(self, data_dir: str = "data"):
-        self.data_dir = Path(data_dir)
+    def __init__(self, data_dir: str = None):
+        if data_dir is None:
+            # Use path relative to this file's location
+            current_file_dir = Path(__file__).parent
+            self.data_dir = current_file_dir / "data"
+        else:
+            self.data_dir = Path(data_dir)
         self.profile_file = self.data_dir / "profile.json"
         self._ensure_data_directory()
         self._ensure_profile_file()

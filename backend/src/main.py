@@ -494,13 +494,13 @@ async def get_supported_countries():
 # Profile Endpoints
 # ================================
 
-from .database.profile_storage import profile_storage
+from .database.storage import storage
 
 @app.get("/api/profile", response_model=Profile)
 async def get_profile():
     """Get user profile data."""
     try:
-        profile_data = profile_storage.get_profile()
+        profile_data = storage.get_profile()
         return Profile(**profile_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -511,7 +511,7 @@ async def update_profile(profile_update: ProfileUpdate):
     try:
         # Convert Pydantic model to dict with aliases
         update_data = profile_update.model_dump(by_alias=True, exclude_unset=True)
-        updated_profile = profile_storage.update_profile(update_data)
+        updated_profile = storage.update_profile(update_data)
         return Profile(**updated_profile)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -520,7 +520,7 @@ async def update_profile(profile_update: ProfileUpdate):
 async def get_client_connections():
     """Get client connection status."""
     try:
-        connections_data = profile_storage.get_client_connections()
+        connections_data = storage.get_client_connections()
         return ClientConnections(**connections_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -531,7 +531,7 @@ async def update_client_connections(connections_update: ClientConnectionsUpdate)
     try:
         # Convert Pydantic model to dict with aliases
         update_data = connections_update.model_dump(by_alias=True, exclude_unset=True)
-        updated_connections = profile_storage.update_client_connections(update_data)
+        updated_connections = storage.update_client_connections(update_data)
         return ClientConnections(**updated_connections)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -540,7 +540,7 @@ async def update_client_connections(connections_update: ClientConnectionsUpdate)
 async def get_notification_settings():
     """Get notification settings."""
     try:
-        settings_data = profile_storage.get_notification_settings()
+        settings_data = storage.get_notification_settings()
         return NotificationSettings(**settings_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -551,7 +551,7 @@ async def update_notification_settings(settings_update: NotificationSettingsUpda
     try:
         # Convert Pydantic model to dict with aliases
         update_data = settings_update.model_dump(by_alias=True, exclude_unset=True)
-        updated_settings = profile_storage.update_notification_settings(update_data)
+        updated_settings = storage.update_notification_settings(update_data)
         return NotificationSettings(**updated_settings)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -560,7 +560,7 @@ async def update_notification_settings(settings_update: NotificationSettingsUpda
 async def get_email_data():
     """Get email template data."""
     try:
-        email_data = profile_storage.get_email_data()
+        email_data = storage.get_email_data()
         return EmailData(**email_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -571,7 +571,7 @@ async def update_email_data(email_update: EmailDataUpdate):
     try:
         # Convert Pydantic model to dict with aliases
         update_data = email_update.model_dump(by_alias=True, exclude_unset=True)
-        updated_email_data = profile_storage.update_email_data(update_data)
+        updated_email_data = storage.update_email_data(update_data)
         return EmailData(**updated_email_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

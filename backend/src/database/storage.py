@@ -22,12 +22,14 @@ class JSONStorage:
         self.companies_file = self.data_dir / "companies.json"
         self.people_file = self.data_dir / "people.json"
         self.email_stats_file = self.data_dir / "email_stats.json"
+        self.profile_file = self.data_dir / "profile.json"
         
         # Ensure data directory exists
         self.data_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize files if they don't exist
         self._init_files()
+        self._ensure_profile_file()
     
     def _init_files(self):
         """Initialize JSON files with empty arrays if they don't exist."""
@@ -46,6 +48,62 @@ class JSONStorage:
     def _write_json(self, file_path: Path, data: List[Dict[str, Any]]):
         """Write data to JSON file."""
         with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    
+    def _ensure_profile_file(self):
+        """Ensure profile.json exists with default data"""
+        if not self.profile_file.exists():
+            default_data = {
+                "profile": {
+                    "id": "profile",
+                    "profileImage": None,
+                    "emailCategories": ["Cold Outreach", "Follow-up", "Networking", "Application"],
+                    "resumeCategories": ["Tech Resume", "Executive Resume", "Creative Resume"],
+                    "coverLetterCategories": ["Tech Cover Letter", "Executive Cover Letter", "Creative Cover Letter"]
+                },
+                "clientConnections": {
+                    "id": "client_connections",
+                    "WhatsApp": True,
+                    "Signal": False,
+                    "Telegram": True,
+                    "X": False,
+                    "Discord": False,
+                    "Mail": True,
+                    "Mountains": True
+                },
+                "notificationSettings": {
+                    "id": "notification_settings",
+                    "WhatsApp": {"emailViews": True, "resumeViews": True, "responses": False},
+                    "Signal": {"emailViews": True, "resumeViews": True, "responses": False},
+                    "Telegram": {"emailViews": True, "resumeViews": True, "responses": False},
+                    "X": {"emailViews": True, "resumeViews": True, "responses": False},
+                    "Discord": {"emailViews": True, "resumeViews": True, "responses": False},
+                    "Mail": {"emailViews": True, "resumeViews": True, "responses": False},
+                    "Mountains": {"emailViews": True, "resumeViews": True, "responses": False}
+                },
+                "emailData": {
+                    "id": "email_data",
+                    "templateType": "Cold Outreach",
+                    "subject": "",
+                    "body": ""
+                }
+            }
+            with open(self.profile_file, 'w', encoding='utf-8') as f:
+                json.dump(default_data, f, indent=2, ensure_ascii=False)
+    
+    def _load_profile_data(self) -> Dict[str, Any]:
+        """Load profile data from JSON file"""
+        try:
+            with open(self.profile_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            self._ensure_profile_file()
+            with open(self.profile_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    
+    def _save_profile_data(self, data: Dict[str, Any]):
+        """Save profile data to JSON file"""
+        with open(self.profile_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     
     def _calculate_company_stats(self, company_id: str) -> Dict[str, Any]:
@@ -312,6 +370,86 @@ class JSONStorage:
         self._write_json(self.email_stats_file, email_stats_data)
         
         return EmailStat(**stat_data)
+
+    # Profile operations
+    def get_profile(self) -> Dict[str, Any]:
+        """Get profile data"""
+        data = self._load_profile_data()
+        return data.get("profile", {})
+    
+    def update_profile(self, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update profile data"""
+        data = self._load_profile_data()
+        if "profile" not in data:
+            data["profile"] = {"id": "profile"}
+        
+        # Update only provided fields
+        for key, value in profile_data.items():
+            if value is not None:
+                data["profile"][key] = value
+        
+        self._save_profile_data(data)
+        return data["profile"]
+    
+    # Client connections operations
+    def get_client_connections(self) -> Dict[str, Any]:
+        """Get client connections data"""
+        data = self._load_profile_data()
+        return data.get("clientConnections", {})
+    
+    def update_client_connections(self, connections_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update client connections data"""
+        data = self._load_profile_data()
+        if "clientConnections" not in data:
+            data["clientConnections"] = {"id": "client_connections"}
+        
+        # Update only provided fields
+        for key, value in connections_data.items():
+            if value is not None:
+                data["clientConnections"][key] = value
+        
+        self._save_profile_data(data)
+        return data["clientConnections"]
+    
+    # Notification settings operations
+    def get_notification_settings(self) -> Dict[str, Any]:
+        """Get notification settings data"""
+        data = self._load_profile_data()
+        return data.get("notificationSettings", {})
+    
+    def update_notification_settings(self, settings_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update notification settings data"""
+        data = self._load_profile_data()
+        if "notificationSettings" not in data:
+            data["notificationSettings"] = {"id": "notification_settings"}
+        
+        # Update only provided fields
+        for key, value in settings_data.items():
+            if value is not None:
+                data["notificationSettings"][key] = value
+        
+        self._save_profile_data(data)
+        return data["notificationSettings"]
+    
+    # Email data operations
+    def get_email_data(self) -> Dict[str, Any]:
+        """Get email template data"""
+        data = self._load_profile_data()
+        return data.get("emailData", {})
+    
+    def update_email_data(self, email_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update email template data"""
+        data = self._load_profile_data()
+        if "emailData" not in data:
+            data["emailData"] = {"id": "email_data"}
+        
+        # Update only provided fields
+        for key, value in email_data.items():
+            if value is not None:
+                data["emailData"][key] = value
+        
+        self._save_profile_data(data)
+        return data["emailData"]
 
 
 # Global storage instance
